@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Aspire/">
+    <Project Path="Aspire/HexMaster.Guestbook.Aspire/HexMaster.Guestbook.Aspire.AppHost/HexMaster.Guestbook.Aspire.AppHost.csproj" Id="83729a38-5978-40e6-af64-029d7659b285" />
+    <Project Path="Aspire/HexMaster.Guestbook.Aspire/HexMaster.Guestbook.Aspire.ServiceDefaults/HexMaster.Guestbook.Aspire.ServiceDefaults.csproj" />
+  </Folder>
+  <Project Path="HexMaster.Guestbook.Api/HexMaster.Guestbook.Api.csproj" />
+  <Project Path="HexMaster.Guestbook.Data.CosmosDb/HexMaster.Guestbook.Data.CosmosDb.csproj" Id="51c41f05-67cf-4a91-a157-efa1c355453a" />
+  <Project Path="HexMaster.Guestbook/HexMaster.Guestbook.csproj" Id="8b857282-d9dd-413a-bec1-55a981148bf6" />
+  <Project Path="Tests/HexMaster.Guestbook.Tests/HexMaster.Guestbook.Tests.csproj" Id="6f389c3b-2ac1-4ab0-a561-cbe31a5f0aaa" />
+</Solution>
