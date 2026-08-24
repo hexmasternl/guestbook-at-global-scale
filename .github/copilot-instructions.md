@@ -34,8 +34,10 @@ scaffolded under `src/` (see below), but it is still early/skeleton code
 standard .NET CLI from the repo root:
 - Build: `dotnet build` (or open `Guestbook.slnx`)
 - Test: `dotnet test`
-There is no frontend build pipeline (the plan calls for a single static
-page with no build step).
+
+An Angular frontend now lives under `frontend/guestbook/` (see the
+"Frontend (`frontend/guestbook/`)" section below) — this supersedes the
+original plan's "single static page, no build step" for the UI.
 
 ## Projects in `src/` and how they map to the plans
 | Project | Relates to (`storyline/demo-app-plan.md`) | Notes |
@@ -53,6 +55,30 @@ frontend `App/` project for the map/form page, and infra-as-code
 When these are added, follow ADR 0002's canonical top-level layout and the
 `feature-slices-module-structure` template — consult the MCP server first as
 described above.
+
+## Frontend (`frontend/guestbook/`)
+The map/form UI is an **Angular 22** app (see `frontend/guestbook/package.json`
+for exact versions, e.g. `@angular/core` `^22.1.0`). When any frontend work is
+requested or required, keep the following in mind:
+
+- **Zoneless**: the app runs without `zone.js` (Angular's zoneless change
+  detection). Do not add `zone.js` or rely on zone-based change detection.
+  Change detection must be triggered explicitly through signals/`OnPush`
+  patterns, not by relying on ambient zone patching.
+- **Signals-first**: use Angular signals (`signal`, `computed`, `effect`,
+  `input()`, `model()`, etc.) for component state and reactivity instead of
+  `RxJS`/manual subscriptions or older `@Input()`/`@Output()` decorators
+  where signal-based equivalents exist. Prefer `OnPush` change detection
+  (implied by zoneless) and signal-driven templates.
+- **Angular Material**: use `@angular/material` (and `@angular/cdk`) for UI
+  components rather than hand-rolled equivalents or other component
+  libraries, staying consistent with the versions already pinned in
+  `frontend/guestbook/package.json`.
+- Check `frontend/guestbook/AGENTS.md` and `CLAUDE.md` for any additional
+  project-specific conventions before making changes there.
+- As with the .NET side, re-check the HexMaster design-guidelines MCP server
+  for any frontend-relevant ADR/recommendation/structure before making
+  structural changes.
 
 ## What this repo is for
 It supports a conference talk, **"When Success Hits the Fan: Going Global in
