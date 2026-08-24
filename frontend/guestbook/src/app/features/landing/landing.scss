@@ -2,6 +2,7 @@
 
 :host {
   display: block;
+  background: $color-page-bg;
 }
 
 .hero {
@@ -37,7 +38,36 @@
   &__content {
     position: relative;
     z-index: 2;
-    max-width: 34rem;
+    max-width: 36rem;
+    animation: hero-content-in 700ms $ease-out-emphasized both;
+  }
+
+  &__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+    padding: $spacing-xs $spacing-md;
+    border-radius: $radius-pill;
+    background: $color-surface-glass;
+    border: 1px solid $color-surface-glass-border;
+    backdrop-filter: blur(8px);
+    font-family: $font-family-base;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $color-accent;
+
+    &::before {
+      content: '';
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: $color-accent;
+      box-shadow: 0 0 0 0 rgba($color-accent, 0.6);
+      animation: pulse-dot 2.4s ease-out infinite;
+    }
   }
 
   &__headline {
@@ -48,6 +78,10 @@
     line-height: $line-height-tight;
     color: $color-headline;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    background: linear-gradient(120deg, $color-headline 40%, $color-accent 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   &__subheadline {
@@ -59,29 +93,245 @@
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
   }
 
+  &__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-lg;
+  }
+
   &__cta {
     font-family: $font-family-base;
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     background-color: $color-cta-bg;
     color: $color-cta-text;
-    transition: background-color $transition-fast;
+    box-shadow: 0 8px 24px rgba($color-cta-bg, 0.35);
+    transition:
+      background-color $transition-fast,
+      transform $transition-fast,
+      box-shadow $transition-fast;
 
     &:hover,
     &:focus-visible {
       background-color: $color-cta-bg-hover;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba($color-cta-bg, 0.45);
+    }
+  }
+
+  &__cta-secondary {
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-headline;
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid $color-surface-glass-border;
+    transition:
+      border-color $transition-fast,
+      color $transition-fast;
+
+    &:hover,
+    &:focus-visible {
+      color: $color-accent;
+      border-color: $color-accent;
+    }
+  }
+
+  &__scroll-cue {
+    position: absolute;
+    left: 50%;
+    bottom: $spacing-xl;
+    z-index: 2;
+    transform: translateX(-50%);
+    width: 1.5rem;
+    height: 2.5rem;
+    border: 2px solid $color-surface-glass-border;
+    border-radius: $radius-pill;
+    display: flex;
+    justify-content: center;
+    padding-top: $spacing-xs;
+
+    span {
+      width: 0.3rem;
+      height: 0.6rem;
+      border-radius: $radius-pill;
+      background: $color-accent;
+      animation: scroll-cue 1.8s ease-in-out infinite;
     }
   }
 }
 
-.coming-soon {
-  min-height: 40vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: $spacing-2xl;
-  text-align: center;
-  font-family: $font-family-base;
+.features {
+  position: relative;
+  padding: $spacing-3xl $spacing-3xl;
+  background: $color-page-bg;
+  color: $color-headline;
+
+  &__intro {
+    max-width: 40rem;
+    margin: 0 auto $spacing-2xl;
+    text-align: center;
+  }
+
+  &__heading {
+    margin: 0 0 $spacing-md;
+    font-family: $font-family-heading;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+  }
+
+  &__lede {
+    margin: 0;
+    font-family: $font-family-base;
+    font-size: $font-size-lg;
+    line-height: $line-height-normal;
+    color: $color-body-muted;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: $spacing-xl;
+    max-width: 72rem;
+    margin: 0 auto;
+  }
 }
+
+.feature-card {
+  padding: $spacing-xl;
+  border-radius: $radius-lg;
+  background: $color-surface-glass;
+  border: 1px solid $color-surface-glass-border;
+  backdrop-filter: blur(8px);
+  transition:
+    transform $transition-base $ease-out-emphasized,
+    box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  &__icon {
+    display: inline-flex;
+    font-size: $font-size-2xl;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title {
+    margin: 0 0 $spacing-sm;
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-headline;
+  }
+
+  &__body {
+    margin: 0;
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+    color: $color-body-muted;
+  }
+}
+
+.site-footer {
+  padding: $spacing-3xl $spacing-3xl;
+  background: $color-footer-bg;
+  color: $color-headline;
+  text-align: center;
+
+  &__content {
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  &__heading {
+    margin: 0 0 $spacing-md;
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+  }
+
+  &__body {
+    margin: 0;
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+    color: $color-body-muted;
+  }
+}
+
+@keyframes hero-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgba($color-accent, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba($color-accent, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba($color-accent, 0);
+  }
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0.6rem);
+    opacity: 0;
+  }
+}
+
+// TEMPORARY: debug button, kept in at the user's request to manually verify
+// the geolocation rotation/marker placement. Remove once confirmed working
+// (see matching removal note in landing.ts).
+.hero__debug-button {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  z-index: 3;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid #ff3d3d;
+  border-radius: $radius-sm;
+  background: rgba(#000, 0.6);
+  color: #ff3d3d;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__content {
+    animation: none;
+  }
+
+  .hero__eyebrow::before {
+    animation: none;
+  }
+
+  .hero__scroll-cue span {
+    animation: none;
+  }
+
+  .feature-card {
+    transition: none;
+  }
+}
+

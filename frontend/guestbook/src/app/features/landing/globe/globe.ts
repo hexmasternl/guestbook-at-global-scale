@@ -1,7 +1,7 @@
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import * as THREE from 'three';
 
-type GlobeStatus = 'idle' | 'locating' | 'transitioning' | 'located' | 'unavailable';
+type GlobeStatus = 'idle' | 'locating' | 'rotating' | 'located' | 'unavailable';
 
 const EARTH_TEXTURE_URL = 'assets/globe/earth-texture.jpg';
 const EARTH_NORMAL_MAP_URL = 'assets/globe/earth_normal_2048.jpg';
@@ -10,7 +10,8 @@ const EARTH_SPECULAR_MAP_URL = 'assets/globe/earth_specular_2048.jpg';
 // Idle rotation, expressed in radians/second so it stays smooth regardless
 // of the display's refresh rate (frame-rate independent).
 const IDLE_ROTATION_RADIANS_PER_SECOND = 0.05;
-const FADE_DURATION_MS = 500;
+// "Casual" eased rotation toward a resolved location, expressed in seconds.
+const LOCATE_ROTATION_DURATION_MS = 2200;
 
 const SPHERE_RADIUS = 1.6;
 const FOV_DEGREES = 42;
@@ -25,7 +26,10 @@ const CAMERA_DISTANCE = computeCameraDistanceForFullHeightSphere(
   FOV_DEGREES,
   HEIGHT_FILL_FACTOR,
 );
-const MARKER_RADIUS = SPHERE_RADIUS * 0.02;
+// Large enough (relative to the sphere) to be clearly visible once the
+// globe stops rotating, rather than a barely-visible speck.
+const MARKER_RADIUS = SPHERE_RADIUS * 0.045;
+const MARKER_RING_RADIUS = MARKER_RADIUS * 2.2;
 
 /** Distance at which a sphere of `radius` exactly fills the vertical field of view of a camera with the given `fovDegrees`; dividing by `fillFactor` (>1) pulls the camera slightly closer so the sphere slightly overfills instead of just touching the frame edges. */
 function computeCameraDistanceForFullHeightSphere(
@@ -36,6 +40,14 @@ function computeCameraDistanceForFullHeightSphere(
   const halfFovRadians = (fovDegrees / 2) * (Math.PI / 180);
   const exactFitDistance = radius / Math.sin(halfFovRadians);
   return exactFitDistance / fillFactor;
+}
+
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+
+/** Smooth ease-in-out-cubic, used to make the "casual" rotation toward a resolved location feel natural rather than linear/mechanical. */
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
@@ -50,7 +62,7 @@ function computeCameraDistanceForFullHeightSphere(
   selector: 'gkb-globe',
   template: `
     <div class="globe" #wrapper aria-hidden="true">
-      <canvas #canvas class="globe__canvas" [class.globe__canvas--hidden]="isFaded()"></canvas>
+      <canvas #canvas class="globe__canvas"></canvas>
     </div>
     @if (status() === 'located') {
       <p class="globe-caption">Rotated to your location</p>
@@ -64,7 +76,6 @@ export class Globe {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly status = signal<GlobeStatus>('idle');
-  protected readonly isFaded = signal(false);
 
   private readonly prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -75,11 +86,16 @@ export class Globe {
   private scene?: THREE.Scene;
   private camera?: THREE.PerspectiveCamera;
   private globeGroup?: THREE.Group;
-  private locationMarker?: THREE.Mesh;
+  private locationMarker?: THREE.Group;
   private resizeObserver?: ResizeObserver;
   private animationFrameId?: number;
-  private fadeTimeoutId?: ReturnType<typeof setTimeout>;
   private lastFrameTimeMs?: number;
+  private rotationAnimation?: {
+    fromQuaternion: THREE.Quaternion;
+    toQuaternion: THREE.Quaternion;
+    startMs: number;
+    durationMs: number;
+  };
 
   constructor() {
     afterNextRender(() => {
@@ -126,10 +142,21 @@ export class Globe {
     const earth = new THREE.Mesh(geometry, material);
     globeGroup.add(earth);
 
-    const marker = new THREE.Mesh(
+    const marker = new THREE.Group();
+    const markerDot = new THREE.Mesh(
       new THREE.SphereGeometry(MARKER_RADIUS, 16, 16),
       new THREE.MeshBasicMaterial({ color: 0xff8a3d }),
     );
+    const markerRing = new THREE.Mesh(
+      new THREE.RingGeometry(MARKER_RADIUS * 1.4, MARKER_RING_RADIUS, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8a3d,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.65,
+      }),
+    );
+    marker.add(markerDot, markerRing);
     marker.visible = false;
     globeGroup.add(marker);
 
@@ -181,10 +208,24 @@ export class Globe {
       (this.status() === 'idle' || this.status() === 'locating' || this.status() === 'unavailable');
     if (shouldIdleRotate) {
       group.rotation.y += IDLE_ROTATION_RADIANS_PER_SECOND * deltaSeconds;
+    } else if (this.rotationAnimation) {
+      const { fromQuaternion, toQuaternion, startMs, durationMs } = this.rotationAnimation;
+      const elapsed = now - startMs;
+      const t = Math.min(elapsed / durationMs, 1);
+      group.quaternion.slerpQuaternions(fromQuaternion, toQuaternion, easeInOutCubic(t));
+      if (t >= 1) {
+        this.rotationAnimation = undefined;
+        this.status.set('located');
+      }
     }
 
     this.renderer.render(this.scene, this.camera);
   };
+
+  /** Test-only helper: forces the globe to the given coordinates via the same eased-rotation flow as a real geolocation resolve. */
+  setLocationForTesting(latitude: number, longitude: number): void {
+    this.onLocationResolved(latitude, longitude);
+  }
 
   private requestUserLocation(): void {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -201,33 +242,49 @@ export class Globe {
 
   private onLocationResolved(latitude: number, longitude: number): void {
     const point = this.latLonToVector3(latitude, longitude, SPHERE_RADIUS);
-    const targetRotationY = Math.atan2(-point.x, point.z);
-    const markerPosition = point.clone().multiplyScalar(1.02);
+    const targetQuaternion = this.computeFacingQuaternion(point);
+    const markerPosition = point.clone().multiplyScalar(1.01);
 
-    if (this.prefersReducedMotion) {
-      this.applyLocation(targetRotationY, markerPosition);
+    // Drop the marker in place immediately (it rotates along with the
+    // globe group, so it stays correctly anchored to the surface).
+    this.applyLocation(markerPosition);
+
+    const fromQuaternion = this.globeGroup?.quaternion.clone() ?? new THREE.Quaternion();
+
+    if (this.prefersReducedMotion || !this.renderer) {
+      this.globeGroup?.quaternion.copy(targetQuaternion);
       this.status.set('located');
       return;
     }
 
-    // Fade the globe out, snap it to the new orientation while hidden (so
-    // the reorientation itself is never visibly spinning), then fade back
-    // in — a clean transition instead of an animated spin to the target.
-    this.status.set('transitioning');
-    this.isFaded.set(true);
-    this.fadeTimeoutId = setTimeout(() => {
-      this.applyLocation(targetRotationY, markerPosition);
-      this.isFaded.set(false);
-      this.fadeTimeoutId = setTimeout(() => this.status.set('located'), FADE_DURATION_MS);
-    }, FADE_DURATION_MS);
+    this.status.set('rotating');
+    this.rotationAnimation = {
+      fromQuaternion,
+      toQuaternion: targetQuaternion,
+      startMs: performance.now(),
+      durationMs: LOCATE_ROTATION_DURATION_MS,
+    };
   }
 
-  private applyLocation(targetRotationY: number, markerPosition: THREE.Vector3): void {
-    if (this.globeGroup) {
-      this.globeGroup.rotation.y = targetRotationY;
-    }
+  /** Computes the globe-group orientation (yaw around Y, then pitch around X) that rotates `point` to face the camera at +Z, tilting the globe vertically as well as spinning it horizontally. */
+  private computeFacingQuaternion(point: THREE.Vector3): THREE.Quaternion {
+    const yaw = Math.atan2(-point.x, point.z);
+    const ringRadius = Math.sqrt(Math.max(SPHERE_RADIUS * SPHERE_RADIUS - point.y * point.y, 0));
+    const pitch = Math.atan2(point.y, ringRadius);
+
+    const yawQuaternion = new THREE.Quaternion().setFromAxisAngle(Y_AXIS, yaw);
+    const pitchQuaternion = new THREE.Quaternion().setFromAxisAngle(X_AXIS, pitch);
+    // Apply yaw first, then pitch, so the point ends up centered on the
+    // camera both horizontally and vertically.
+    return pitchQuaternion.multiply(yawQuaternion);
+  }
+
+  private applyLocation(markerPosition: THREE.Vector3): void {
     if (this.locationMarker) {
       this.locationMarker.position.copy(markerPosition);
+      // Orient the ring so it lies flush against the sphere's surface,
+      // facing outward along the radial direction through its position.
+      this.locationMarker.lookAt(0, 0, 0);
       this.locationMarker.visible = true;
     }
   }
@@ -246,9 +303,6 @@ export class Globe {
   private dispose(): void {
     if (this.animationFrameId !== undefined) {
       cancelAnimationFrame(this.animationFrameId);
-    }
-    if (this.fadeTimeoutId !== undefined) {
-      clearTimeout(this.fadeTimeoutId);
     }
     this.resizeObserver?.disconnect();
     this.renderer?.dispose();

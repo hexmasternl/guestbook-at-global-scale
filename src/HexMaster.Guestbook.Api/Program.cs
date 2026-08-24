@@ -14,8 +14,23 @@ builder.AddServiceDefaults();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+var corsAllowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+const string CorsPolicyName = "GuestbookFrontend";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        if (corsAllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsAllowedOrigins)
+                .WithMethods("GET", "POST")
+                .WithHeaders("Content-Type");
+        }
+    });
+});
+
 builder.AddAzureCosmosClient("guestbook-cosmos");
-builder.Services.AddGuestbookModule();
+builder.Services.AddGuestbookModule(builder.Configuration);
 builder.Services.AddGuestbookCosmosDb(builder.Configuration);
 
 // Per-instance request throttling (System.Threading.RateLimiting / Microsoft.AspNetCore.RateLimiting).
@@ -62,6 +77,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(CorsPolicyName);
 
 app.UseRateLimiter();
 

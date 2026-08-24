@@ -15,17 +15,6 @@
     display: block;
     width: 100%;
     height: 100%;
-    opacity: 1;
-    // Keep in sync with FADE_DURATION_MS in globe.ts.
-    transition: opacity 500ms ease-in-out;
-
-    &--hidden {
-      opacity: 0;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
   }
 }
 

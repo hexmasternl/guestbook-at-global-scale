@@ -1,18 +1,75 @@
 <section class="hero">
   <gkb-globe class="hero__globe-backdrop" />
+  <button type="button" class="hero__debug-button" (click)="debugSetAmsterdam()">
+    DEBUG: Set location to Amsterdam
+  </button>
   <div class="hero__scrim" aria-hidden="true"></div>
 
   <div class="hero__content">
+    <span class="hero__eyebrow">Live · Global · Real-time</span>
     <h1 class="hero__headline">Say hi, from anywhere on Earth</h1>
     <p class="hero__subheadline">
       One guestbook, one world map, and messages that appear for everyone in near real-time — no
       matter which region they came from.
     </p>
-    <a class="hero__cta" mat-flat-button href="#coming-soon">Sign the guestbook</a>
+    <div class="hero__actions">
+      <button class="hero__cta" mat-flat-button type="button" (click)="openAddGuestbookEntry()">
+        Sign the guestbook
+      </button>
+      <a class="hero__cta-secondary" href="#how-it-works">See how it works</a>
+    </div>
+  </div>
+
+  <div class="hero__scroll-cue" aria-hidden="true">
+    <span></span>
   </div>
 </section>
 
-<section id="coming-soon" class="coming-soon">
-  <h2>Coming soon</h2>
-  <p>The interactive world map and guestbook form are on their way. Check back soon!</p>
+<section class="features" id="how-it-works">
+  <div class="features__intro">
+    <h2 class="features__heading">Built to feel instant, everywhere</h2>
+    <p class="features__lede">
+      Every region runs its own copy of the same stateless API and writes to its own nearby
+      database replica — so your message never waits on a round trip halfway around the world.
+    </p>
+  </div>
+
+  <div class="features__grid">
+    <article class="feature-card">
+      <span class="feature-card__icon" aria-hidden="true">📍</span>
+      <h3 class="feature-card__title">Drop a pin</h3>
+      <p class="feature-card__body">
+        Share a short "hi from —" message. We geo-tag it automatically so it lands in the right
+        spot on the map.
+      </p>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-card__icon" aria-hidden="true">🌍</span>
+      <h3 class="feature-card__title">Routed to the nearest region</h3>
+      <p class="feature-card__body">
+        Azure Front Door sends your request to whichever region answers fastest, so it always
+        feels local.
+      </p>
+    </article>
+
+    <article class="feature-card">
+      <span class="feature-card__icon" aria-hidden="true">⚡</span>
+      <h3 class="feature-card__title">Live for everyone, instantly</h3>
+      <p class="feature-card__body">
+        Multi-region writes replicate in near real-time, so visitors across the globe see your
+        greeting appear moments after you send it.
+      </p>
+    </article>
+  </div>
 </section>
+
+<footer class="site-footer" id="coming-soon">
+  <div class="site-footer__content">
+    <h2 class="site-footer__heading">The interactive map is on its way</h2>
+    <p class="site-footer__body">
+      You can already sign the guestbook — the live map showing everyone's pins is still on its
+      way. Check back soon to see the world light up.
+    </p>
+  </div>
+</footer>

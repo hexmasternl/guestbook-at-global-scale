@@ -8,6 +8,7 @@ namespace HexMaster.Guestbook.Features.CreateGuestbookEntry;
 public sealed class CreateGuestbookEntryCommandHandler(
     IGuestbookEntryRepository repository,
     IGuestbookRegionProvider regionProvider,
+    IClientLocationResolver clientLocationResolver,
     ILogger<CreateGuestbookEntryCommandHandler> logger)
     : ICommandHandler<CreateGuestbookEntryCommand, CreateGuestbookEntryResult>
 {
@@ -16,7 +17,18 @@ public sealed class CreateGuestbookEntryCommandHandler(
         ArgumentNullException.ThrowIfNull(command);
 
         var region = regionProvider.GetCurrentRegion();
-        var entry = GuestbookEntry.Create(command.Message, command.Lat, command.Lng, region);
+
+        double lat, lng;
+        if (command.Lat is { } suppliedLat && command.Lng is { } suppliedLng)
+        {
+            (lat, lng) = (suppliedLat, suppliedLng);
+        }
+        else
+        {
+            (lat, lng) = clientLocationResolver.Resolve(command.ClientIp);
+        }
+
+        var entry = GuestbookEntry.Create(command.Message, lat, lng, region);
 
         await repository.AddAsync(entry, ct);
 

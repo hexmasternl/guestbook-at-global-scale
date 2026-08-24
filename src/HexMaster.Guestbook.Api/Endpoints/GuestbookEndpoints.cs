@@ -31,24 +31,15 @@ public static class GuestbookEndpoints
 
     private static async Task<IResult> CreateGuestbookEntry(
         CreateGuestbookEntryRequest request,
+        HttpContext httpContext,
         ICommandHandler<CreateGuestbookEntryCommand, CreateGuestbookEntryResult> handler,
         CancellationToken ct)
     {
-        var errors = new Dictionary<string, string[]>();
-
-        if (string.IsNullOrWhiteSpace(request.Message))
-            errors["message"] = ["Message must not be empty."];
-
-        if (request.Lat is < -90 or > 90)
-            errors["lat"] = ["Lat must be between -90 and 90."];
-
-        if (request.Lng is < -180 or > 180)
-            errors["lng"] = ["Lng must be between -180 and 180."];
-
-        if (errors.Count > 0)
+        if (!CreateGuestbookEntryRequestValidator.TryValidate(request, out var errors))
             return Results.ValidationProblem(errors);
 
-        var command = new CreateGuestbookEntryCommand(request.Message, request.Lat, request.Lng);
+        var clientIp = ClientIpResolver.Resolve(httpContext);
+        var command = new CreateGuestbookEntryCommand(request.Message, request.Lat, request.Lng, clientIp);
         var result = await handler.Handle(command, ct);
 
         var dto = new GuestbookEntryDto(result.Id, result.Message, result.Lat, result.Lng, result.Region, result.Ts);
