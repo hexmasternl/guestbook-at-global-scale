@@ -1,0 +1,57 @@
+// Centralized design tokens for the guestbook frontend, per ADR 0006
+// (Centralized Frontend Styling Variables). All colors, spacing, and
+// typography values used across components must be declared here and
+// consumed via `@use 'variables' as *;` — never hardcoded in component
+// styles.
+
+// Brand / hero colors
+$color-hero-bg-start: #0b1e33;
+$color-hero-bg-end: #133a5e;
+$color-headline: #f5f9ff;
+$color-subheadline: #c6d6e8;
+
+// Globe colors
+$color-globe-ocean: #1f6fa8;
+$color-globe-land: #3f8f5f;
+$color-globe-atmosphere: #61c3ff;
+$color-globe-shadow: rgba(0, 0, 0, 0.55);
+
+// Call-to-action colors
+$color-cta-bg: #ff8a3d;
+$color-cta-bg-hover: #ff9d5c;
+$color-cta-text: #16202b;
+
+// Typography
+$font-family-heading: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family-base: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+$font-size-sm: 0.875rem; // 14px
+$font-size-base: 1rem; // 16px
+$font-size-lg: 1.25rem; // 20px
+$font-size-xl: 1.75rem; // 28px
+$font-size-2xl: 2.5rem; // 40px
+$font-size-3xl: 3.25rem; // 52px
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 700;
+
+$line-height-tight: 1.15;
+$line-height-normal: 1.5;
+
+// Spacing (8px base unit)
+$spacing-xs: 0.25rem; // 4px
+$spacing-sm: 0.5rem; // 8px
+$spacing-md: 1rem; // 16px
+$spacing-lg: 1.5rem; // 24px
+$spacing-xl: 2rem; // 32px
+$spacing-2xl: 3rem; // 48px
+$spacing-3xl: 4rem; // 64px
+
+// Sizing
+$globe-size: 22rem;
+$globe-size-mobile: 14rem;
+
+// Motion
+$globe-rotation-duration: 60s;
+$transition-fast: 150ms ease-in-out;
