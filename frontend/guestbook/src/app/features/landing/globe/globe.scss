@@ -1,0 +1,43 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: $color-globe-ocean;
+}
+
+.globe {
+  width: 100%;
+  height: 100%;
+
+  &__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    // Keep in sync with FADE_DURATION_MS in globe.ts.
+    transition: opacity 500ms ease-in-out;
+
+    &--hidden {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+}
+
+.globe-caption {
+  position: absolute;
+  right: $spacing-md;
+  bottom: $spacing-md;
+  margin: 0;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  color: $color-headline;
+}

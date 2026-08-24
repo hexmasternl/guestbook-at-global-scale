@@ -18,6 +18,28 @@ The landing page SHALL display a hero section featuring a graphical, animated re
 - **WHEN** a user loads the landing page with `prefers-reduced-motion: reduce` set in their browser/OS
 - **THEN** the Earth graphic renders as a static, non-animated sphere instead of rotating
 
+### Requirement: Realistic 3D globe with real Earth imagery
+The hero's Earth graphic SHALL be rendered as a true 3D object (not a flat/2D approximation) textured with a real, photographic-style Earth map, so it reads as an actual globe rather than a stylized graphic.
+
+#### Scenario: Globe uses a real-world texture
+- **WHEN** the landing page renders the hero globe
+- **THEN** its surface is textured with a real equirectangular Earth photo (not an abstract/illustrative map), lit to appear three-dimensional
+
+#### Scenario: WebGL unavailable
+- **WHEN** the visitor's browser/device does not support WebGL
+- **THEN** the page does not crash or show a broken canvas; the globe degrades gracefully (e.g. remains hidden/inert) while the rest of the hero content stays usable
+
+### Requirement: Globe orients toward the visitor's location when permitted
+When the visitor's browser grants geolocation access, the hero globe SHALL rotate to face the visitor's real-world location.
+
+#### Scenario: Geolocation permission granted
+- **WHEN** a visitor allows the browser's location-sharing prompt
+- **THEN** the globe smoothly rotates (or, under `prefers-reduced-motion: reduce`, immediately snaps) until the visitor's resolved latitude/longitude faces the camera, with a small marker shown at that location
+
+#### Scenario: Geolocation permission denied or unavailable
+- **WHEN** a visitor denies the location prompt, it times out, or the Geolocation API is unavailable
+- **THEN** the globe continues (or resumes) its default idle rotation with no marker shown, and no error is surfaced to the visitor
+
 ### Requirement: Headline, sub-headline, and call-to-action
 The landing page SHALL present a headline, a supporting sub-headline, and a single primary call-to-action element inviting the visitor toward the guestbook experience.
 

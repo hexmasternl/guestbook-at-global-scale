@@ -1,15 +1,16 @@
 import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { Globe } from './globe/globe';
 
 /**
- * Landing hero page: headline, sub-headline, animated Earth graphic, and a
+ * Landing hero page: headline, sub-headline, animated 3D Earth graphic, and a
  * placeholder call-to-action pointing at the (not yet built) interactive
  * guestbook map/form. Purely presentational — makes no calls to the
  * guestbook API.
  */
 @Component({
   selector: 'gkb-landing',
-  imports: [MatButtonModule],
+  imports: [MatButtonModule, Globe],
   templateUrl: './landing.html',
   styleUrl: './landing.scss',
 })

@@ -1,5 +1,12 @@
 ## Context
 
+> **Note (superseded plan):** This context section describes the original
+> plan (plain static HTML/JS under `src/App`, no build step). The repository
+> has since adopted an Angular frontend at `frontend/guestbook/`, which
+> supersedes that plan for the UI. See `tasks.md` for how this change was
+> actually implemented, and the "Decision 1 update" below for how the globe
+> was later upgraded to a real, geolocation-aware 3D Earth.
+
 The repository has no frontend project at all yet — `src/` only contains the API, domain module, Cosmos DB adapter, Aspire orchestration, and tests. `storyline/demo-app-plan.md` calls for "one static HTML/JS page... no build pipeline" as the frontend, and ADR 0002's canonical layout reserves an `App/` slot for it. This change introduces that slot for the first time, with a self-contained landing page rather than the full map+form experience (which depends on `/greet` and `/greetings`, both already implemented in `HexMaster.Guestbook.Api`).
 
 Constraints in force:
@@ -23,6 +30,18 @@ Constraints in force:
 - Accessibility/i18n beyond basic semantic HTML and reduced-motion support (covered minimally, not exhaustively).
 
 ## Decisions
+
+### Decision 1 update (post-implementation): Real 3D globe via three.js/WebGL, not CSS-only
+
+Superseding the original "Decision 1" below: after the initial CSS-only globe shipped, the requirement grew to (a) use a real, photographic Earth texture instead of an abstract map graphic, and (b) rotate the globe to face the visitor's real-world location when geolocation permission is granted. A flat `background-position` CSS animation cannot represent true 3D orientation/rotation toward an arbitrary lat/lon, so the globe was rebuilt as an actual 3D object using `three.js` (WebGL), rendered in a `<canvas>` inside a new `Globe` standalone component (`frontend/guestbook/src/app/features/landing/globe/`):
+- A `THREE.SphereGeometry` textured with a real equirectangular Earth photo (`earth-texture.jpg`, plus a normal map and specular map for lit, textured shading), lit with ambient + directional lights.
+- Idle behavior: slow continuous rotation around the Y axis, gated by `prefers-reduced-motion` (static, non-rotating render when reduced motion is requested).
+- On mount, requests `navigator.geolocation.getCurrentPosition`. If granted, the globe eases (or, under reduced motion, snaps instantly) to face the resolved latitude/longitude and drops a small marker there; if denied/unavailable, it keeps idly rotating.
+- WebGL context creation is guarded with try/catch so environments without WebGL (or the jsdom-based unit test runner) degrade gracefully instead of crashing.
+- This intentionally reintroduces a build-time dependency (`three`) and a larger JS payload (~120kB gzipped in the lazy `landing` chunk) — acceptable since the frontend already moved to a full Angular + npm build pipeline (see the "Angular supersession" note above), so the original plain-HTML "no dependency" constraint no longer applies here.
+- Real texture assets (`earth-texture.jpg`, `earth_normal_2048.jpg`, `earth_specular_2048.jpg`) were sourced from the `three.js` project's own official examples (MIT-licensed repository), avoiding any custom/uncertain-license imagery.
+
+### Original decisions (superseded in part by the update above; kept for history)
 
 ### 1. Plain HTML/CSS/JS, animated Earth via CSS transforms (no canvas/WebGL library)
 The globe is built as a CSS-animated sphere: a circular element with a seamless equirectangular world-map texture (a static image asset) that scrolls horizontally on a `background-position` keyframe animation, combined with radial-gradient shading and a `box-shadow` to fake a 3D lit sphere, inside a `perspective`-parented container for subtle depth. This achieves a convincing rotating-globe effect with zero JS dependencies and no build step.

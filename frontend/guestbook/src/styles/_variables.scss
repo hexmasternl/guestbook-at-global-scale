@@ -12,9 +12,6 @@ $color-subheadline: #c6d6e8;
 
 // Globe colors
 $color-globe-ocean: #1f6fa8;
-$color-globe-land: #3f8f5f;
-$color-globe-atmosphere: #61c3ff;
-$color-globe-shadow: rgba(0, 0, 0, 0.55);
 
 // Call-to-action colors
 $color-cta-bg: #ff8a3d;
@@ -48,10 +45,5 @@ $spacing-xl: 2rem; // 32px
 $spacing-2xl: 3rem; // 48px
 $spacing-3xl: 4rem; // 64px
 
-// Sizing
-$globe-size: 22rem;
-$globe-size-mobile: 14rem;
-
 // Motion
-$globe-rotation-duration: 60s;
 $transition-fast: 150ms ease-in-out;

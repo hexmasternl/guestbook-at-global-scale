@@ -5,18 +5,38 @@
 }
 
 .hero {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: $spacing-3xl;
   min-height: 100dvh;
   padding: $spacing-2xl $spacing-3xl;
   background: linear-gradient(160deg, $color-hero-bg-start 0%, $color-hero-bg-end 100%);
   color: $color-headline;
   box-sizing: border-box;
-  flex-wrap: wrap;
+  overflow: hidden;
+
+  &__globe-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  &__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      100deg,
+      rgba($color-hero-bg-start, 0.88) 0%,
+      rgba($color-hero-bg-start, 0.45) 42%,
+      rgba($color-hero-bg-start, 0.05) 75%
+    );
+    pointer-events: none;
+  }
 
   &__content {
+    position: relative;
+    z-index: 2;
     max-width: 34rem;
   }
 
@@ -27,6 +47,7 @@
     font-weight: $font-weight-bold;
     line-height: $line-height-tight;
     color: $color-headline;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
   &__subheadline {
@@ -35,6 +56,7 @@
     font-size: $font-size-lg;
     line-height: $line-height-normal;
     color: $color-subheadline;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
   }
 
   &__cta {
@@ -50,36 +72,6 @@
       background-color: $color-cta-bg-hover;
     }
   }
-
-  &__globe-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    perspective: 60rem;
-    flex: 0 0 auto;
-  }
-
-  &__globe {
-    width: $globe-size-mobile;
-    height: $globe-size-mobile;
-    border-radius: 50%;
-    background-image: url('/assets/globe/world-map-texture.svg');
-    background-repeat: repeat-x;
-    background-size: auto 100%;
-    box-shadow:
-      inset -1.5rem -1.5rem 3rem $color-globe-shadow,
-      0 0 3rem rgba($color-globe-atmosphere, 0.45);
-    background-color: $color-globe-ocean;
-
-    @media (min-width: 48rem) {
-      width: $globe-size;
-      height: $globe-size;
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-      animation: globe-rotate $globe-rotation-duration linear infinite;
-    }
-  }
 }
 
 .coming-soon {
@@ -92,13 +84,4 @@
   padding: $spacing-2xl;
   text-align: center;
   font-family: $font-family-base;
-}
-
-@keyframes globe-rotate {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: -400px 0;
-  }
 }
