@@ -12,8 +12,7 @@ public static class GuestbookEndpoints
     public static IEndpointRouteBuilder MapGuestbookEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/greet")
-            .WithTags("Guestbook")
-            .WithOpenApi();
+            .WithTags("Guestbook");
 
         group.MapPost("/", CreateGuestbookEntry)
             .WithName("CreateGuestbookEntry")
@@ -24,7 +23,6 @@ public static class GuestbookEndpoints
         app.MapGet("/greetings", ListGuestbookEntries)
             .WithName("ListGuestbookEntries")
             .WithTags("Guestbook")
-            .WithOpenApi()
             .Produces<ListGuestbookEntriesResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem();
 
