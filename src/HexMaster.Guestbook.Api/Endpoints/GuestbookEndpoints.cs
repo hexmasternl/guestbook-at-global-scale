@@ -1,7 +1,9 @@
 using HexMaster.Guestbook.Abstractions.DataTransferObjects;
+using HexMaster.Guestbook.Api.RateLimiting;
 using HexMaster.Guestbook.Core;
 using HexMaster.Guestbook.Features.CreateGuestbookEntry;
 using HexMaster.Guestbook.Features.ListGuestbookEntries;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HexMaster.Guestbook.Api.Endpoints;
 
@@ -15,6 +17,7 @@ public static class GuestbookEndpoints
 
         group.MapPost("/", CreateGuestbookEntry)
             .WithName("CreateGuestbookEntry")
+            .RequireRateLimiting(RateLimitPartitions.CreateGreetingPolicy)
             .Produces<GuestbookEntryDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
