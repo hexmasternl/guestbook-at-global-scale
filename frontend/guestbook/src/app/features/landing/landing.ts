@@ -1,4 +1,4 @@
-import { Component, inject, viewChild } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { AddGuestbookEntry } from './add-guestbook-entry/add-guestbook-entry';
@@ -19,16 +19,6 @@ import { Globe } from './globe/globe';
 })
 export class Landing {
   private readonly dialog = inject(MatDialog);
-
-  // TEMPORARY: kept in at the user's request to manually verify the
-  // geolocation rotation/marker placement without needing real browser
-  // location access. Remove this, the `debugSetAmsterdam` method, and the
-  // debug button in landing.html once confirmed working.
-  private readonly globe = viewChild.required(Globe);
-
-  protected debugSetAmsterdam(): void {
-    this.globe().setLocationForTesting(52.3676, 4.9041);
-  }
 
   protected openAddGuestbookEntry(): void {
     this.dialog.open(AddGuestbookEntry, { ariaLabel: 'Sign the guestbook' });

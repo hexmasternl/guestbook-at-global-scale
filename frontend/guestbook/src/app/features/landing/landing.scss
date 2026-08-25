@@ -299,23 +299,6 @@
   }
 }
 
-// TEMPORARY: debug button, kept in at the user's request to manually verify
-// the geolocation rotation/marker placement. Remove once confirmed working
-// (see matching removal note in landing.ts).
-.hero__debug-button {
-  position: absolute;
-  top: $spacing-md;
-  right: $spacing-md;
-  z-index: 3;
-  padding: $spacing-sm $spacing-md;
-  border: 1px solid #ff3d3d;
-  border-radius: $radius-sm;
-  background: rgba(#000, 0.6);
-  color: #ff3d3d;
-  font-family: $font-family-base;
-  font-size: $font-size-sm;
-  cursor: pointer;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .hero__content {
