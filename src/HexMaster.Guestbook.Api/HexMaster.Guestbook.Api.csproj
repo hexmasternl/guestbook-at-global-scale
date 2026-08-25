@@ -6,6 +6,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Container image metadata (also enforced in the Dockerfile / CI workflow):
+       image is named global-guestbook/guestbook-api and runs as the non-root
+       "app" user (APP_UID) so it never runs under a privileged account. The
+       version tag is supplied by the GitHub Actions workflow (semantic versioning). -->
+  <PropertyGroup>
+    <ContainerRepository>global-guestbook/guestbook-api</ContainerRepository>
+    <ContainerUser>app</ContainerUser>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.Azure.Cosmos" Version="13.5.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />

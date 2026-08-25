@@ -1,0 +1,109 @@
+name: Deploy backend (multi-region)
+
+# Primary path for reconfiguring the demo per conference: toggle a region line in
+# infra/main.bicep, then run this workflow (manually or on push). Region fan-out lives
+# entirely in Bicep, so this workflow never needs per-region edits.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'src/**'
+      - '.github/workflows/deploy-backend.yml'
+
+# OIDC federation to Azure — no stored cloud credentials.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  RESOURCE_GROUP: guestbook-rg
+  LOCATION: westeurope
+  RESOURCE_PREFIX: guestbook
+  IMAGE_REPOSITORY: global-guestbook/guestbook-api
+  # Semantic version: MAJOR.MINOR here, PATCH = workflow run number (see below).
+  VERSION_MAJOR_MINOR: '1.0'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure resource group
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+
+      # Compute the semantic version tag (MAJOR.MINOR.PATCH) for this run.
+      - name: Compute image version
+        id: version
+        run: |
+          VERSION="${VERSION_MAJOR_MINOR}.${GITHUB_RUN_NUMBER}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Image version: $VERSION"
+
+      # Build the image (GeoIP DB baked in via MAXMIND_LICENSE_KEY) and push it to the
+      # existing central ACR using the registry credentials from GitHub Secrets.
+      - name: Build and push image
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_LOGIN_USERNAME: ${{ secrets.ACR_LOGIN_USERNAME }}
+          ACR_LOGIN_PASSWORD: ${{ secrets.ACR_LOGIN_PASSWORD }}
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # ACR_LOGIN_PASSWORD / MAXMIND_LICENSE_KEY are masked secrets; never echo them.
+          echo "$ACR_LOGIN_PASSWORD" | docker login "$ACR_LOGIN_SERVER" \
+            --username "$ACR_LOGIN_USERNAME" --password-stdin
+          IMAGE="$ACR_LOGIN_SERVER/$IMAGE_REPOSITORY:$VERSION"
+          docker build \
+            --build-arg MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" \
+            -f src/HexMaster.Guestbook.Api/Dockerfile \
+            -t "$IMAGE" \
+            .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      # Deploy the full topology. Region selection comes from the Bicep `regions` array
+      # (single source of truth), so nothing region-specific lives here.
+      - name: Deploy infrastructure
+        uses: azure/cli@v2
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_LOGIN_USERNAME: ${{ secrets.ACR_LOGIN_USERNAME }}
+          ACR_LOGIN_PASSWORD: ${{ secrets.ACR_LOGIN_PASSWORD }}
+        with:
+          inlineScript: |
+            outputs=$(az deployment group create \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "main-$GITHUB_RUN_ID" \
+              --template-file infra/main.bicep \
+              --parameters \
+                resourcePrefix="$RESOURCE_PREFIX" \
+                registryLoginServer="$ACR_LOGIN_SERVER" \
+                registryUsername="$ACR_LOGIN_USERNAME" \
+                registryPassword="$ACR_LOGIN_PASSWORD" \
+                containerImage="$IMAGE" \
+              --query properties.outputs -o json)
+            fd=$(echo "$outputs" | jq -r .frontDoorHostName.value)
+            {
+              echo "## Guestbook backend deployed"
+              echo ""
+              echo "**Image:** \`$IMAGE\`"
+              echo ""
+              echo "**Front Door endpoint:** https://$fd"
+              echo ""
+              echo "**Regional origins:**"
+              echo "$outputs" | jq -r '.regionFqdns.value[] | "- \(.region): \(.fqdn)"'
+            } >> "$GITHUB_STEP_SUMMARY"

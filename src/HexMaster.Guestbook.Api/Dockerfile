@@ -30,4 +30,9 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY --from=geoip /geoip/GeoLite2-Country.mmdb /app/geoip/GeoLite2-Country.mmdb
 
+# Run as the non-root user baked into the .NET base image (APP_UID / user "app"),
+# so the container never runs under a privileged (root) account. The GeoIP file is
+# world-readable, so the app can still load it.
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "HexMaster.Guestbook.Api.dll"]
