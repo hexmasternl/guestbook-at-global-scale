@@ -49,6 +49,16 @@ param registryPassword string
 @description('Location for the central resource group (Front Door / Cosmos / identity).')
 param centralLocation string = 'westeurope'
 
+@description('Location for the frontend Static Web App. Static Web Apps is only available in a subset of regions, so this is deliberately separate from centralLocation.')
+@allowed([
+  'westus2'
+  'centralus'
+  'eastus2'
+  'westeurope'
+  'eastasia'
+])
+param staticWebAppLocation string = 'westeurope'
+
 @description('Tags applied to all resources.')
 param tags object = {
   workload: 'guestbook'
@@ -107,6 +117,24 @@ module cosmos 'modules/cosmos.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
+// CENTRAL: Azure Static Web App hosting the Angular frontend.
+// Content upload happens in the deploy workflow via the app's deployment token.
+// Declared before the regions because each Container App needs this app's URL
+// as its CORS allowed origin.
+// ---------------------------------------------------------------------------
+module staticSite 'modules/staticsite.bicep' = {
+  scope: centralResourceGroup
+  name: 'staticsite'
+  params: {
+    location: staticWebAppLocation
+    staticWebAppName: '${resourcePrefix}-web-${suffix}'
+    tags: tags
+  }
+}
+
+var frontendOrigin = 'https://${staticSite.outputs.defaultHostName}'
+
+// ---------------------------------------------------------------------------
 // PER REGION: one resource group (above) with a Container Apps environment + app.
 // ---------------------------------------------------------------------------
 module regionDeployments 'modules/region.bicep' = [
@@ -124,25 +152,11 @@ module regionDeployments 'modules/region.bicep' = [
       identityId: identity.outputs.identityId
       identityClientId: identity.outputs.clientId
       cosmosEndpoint: cosmos.outputs.endpoint
+      allowedCorsOrigin: frontendOrigin
       tags: tags
     }
   }
 ]
-
-// ---------------------------------------------------------------------------
-// CENTRAL: storage account hosting the Angular frontend as a static website.
-// Static website hosting + content upload happen in the deploy workflow.
-// ---------------------------------------------------------------------------
-module staticSite 'modules/staticsite.bicep' = {
-  scope: centralResourceGroup
-  name: 'staticsite'
-  params: {
-    location: centralLocation
-    // Storage account names are capped at 24 chars; `take` keeps us within limit.
-    storageAccountName: take(toLower('${resourcePrefix}web${suffix}'), 24)
-    tags: tags
-  }
-}
 
 // ---------------------------------------------------------------------------
 // CENTRAL: Front Door — profile + endpoint + origin group.
@@ -196,11 +210,11 @@ output cosmosEndpoint string = cosmos.outputs.endpoint
 @description('Central resource group name.')
 output centralResourceGroupName string = centralResourceGroup.name
 
-@description('Storage account (central RG) that hosts the frontend static website.')
-output staticWebsiteStorageAccountName string = staticSite.outputs.storageAccountName
+@description('Static Web App (central RG) that hosts the frontend.')
+output staticWebAppName string = staticSite.outputs.staticWebAppName
 
-@description('Primary static-website endpoint of the frontend storage account.')
-output staticWebsiteEndpoint string = staticSite.outputs.primaryWebEndpoint
+@description('Public URL of the frontend Static Web App.')
+output staticWebAppUrl string = frontendOrigin
 
 @description('Per-region resource group names (each holds that region Container App).')
 output regionResourceGroupNames array = [for r in regions: '${resourcePrefix}-${r.short}-rg']

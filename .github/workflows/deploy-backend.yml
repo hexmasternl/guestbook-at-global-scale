@@ -110,9 +110,10 @@ jobs:
                 containerImage="$IMAGE" \
               --query properties.outputs -o json)
             fd=$(echo "$outputs" | jq -r .frontDoorHostName.value)
-            # Storage account that hosts the frontend static website (central RG).
-            echo "STATIC_SITE_ACCOUNT=$(echo "$outputs" | jq -r .staticWebsiteStorageAccountName.value)" >> "$GITHUB_ENV"
-            echo "STATIC_SITE_ENDPOINT=$(echo "$outputs" | jq -r .staticWebsiteEndpoint.value)" >> "$GITHUB_ENV"
+            # Static Web App that hosts the frontend (central RG).
+            echo "CENTRAL_RG=$(echo "$outputs" | jq -r .centralResourceGroupName.value)" >> "$GITHUB_ENV"
+            echo "STATIC_WEB_APP_NAME=$(echo "$outputs" | jq -r .staticWebAppName.value)" >> "$GITHUB_ENV"
+            echo "STATIC_WEB_APP_URL=$(echo "$outputs" | jq -r .staticWebAppUrl.value)" >> "$GITHUB_ENV"
             {
               echo "## Guestbook backend deployed"
               echo ""
@@ -126,27 +127,37 @@ jobs:
               echo "$outputs" | jq -r '.regionResourceGroupNames.value[] | "- \(.)"'
             } >> "$GITHUB_STEP_SUMMARY"
 
-      # Enable Storage static website hosting on the central storage account, then
-      # upload the built Angular app to the `$web` container. `--auth-mode key` uses
-      # the account key (fetched automatically by the CLI) so no data-plane RBAC role
-      # is required on the deployment principal.
-      - name: Deploy frontend (static website)
+      # Static Web Apps content deployment authenticates with the app's own
+      # deployment token rather than the ARM control plane. Fetching it here with the
+      # OIDC session keeps the "no stored cloud credentials" property — the token is
+      # never persisted as a GitHub secret, only masked in this run's memory.
+      - name: Get Static Web App deployment token
+        id: swa_token
         uses: azure/cli@v2
         with:
           inlineScript: |
-            az storage blob service-properties update \
-              --account-name "$STATIC_SITE_ACCOUNT" \
-              --auth-mode key \
-              --static-website \
-              --index-document index.html \
-              --404-document index.html
-            az storage blob upload-batch \
-              --account-name "$STATIC_SITE_ACCOUNT" \
-              --auth-mode key \
-              --destination '$web' \
-              --source frontend/guestbook/dist/guestbook/browser \
-              --overwrite
-            {
-              echo ""
-              echo "**Frontend static website:** $STATIC_SITE_ENDPOINT"
-            } >> "$GITHUB_STEP_SUMMARY"
+            token=$(az staticwebapp secrets list \
+              --name "$STATIC_WEB_APP_NAME" \
+              --resource-group "$CENTRAL_RG" \
+              --query properties.apiKey -o tsv)
+            echo "::add-mask::$token"
+            echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      # Upload the already-built Angular output. `skip_app_build` is essential:
+      # without it the action runs its own Oryx build and ignores our dist/.
+      - name: Deploy frontend (Static Web App)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa_token.outputs.token }}
+          action: upload
+          app_location: frontend/guestbook/dist/guestbook/browser
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Summarize frontend deployment
+        run: |
+          {
+            echo ""
+            echo "**Frontend Static Web App:** $STATIC_WEB_APP_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

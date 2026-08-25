@@ -33,6 +33,9 @@ param identityClientId string
 @description('Cosmos DB account endpoint URI.')
 param cosmosEndpoint string
 
+@description('Origin allowed to call the API from a browser (the frontend Static Web App URL). Scheme + host, no trailing slash.')
+param allowedCorsOrigin string
+
 @description('Tags applied to the region resources.')
 param tags object = {}
 
@@ -101,6 +104,14 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
               // Tells DefaultAzureCredential which user-assigned identity to use.
               name: 'AZURE_CLIENT_ID'
               value: identityClientId
+            }
+            {
+              // The frontend is served from a different origin than the API
+              // (Static Web App vs Front Door), so the SWA origin must be
+              // allow-listed or the browser blocks every call. Array-index
+              // syntax maps onto Cors:AllowedOrigins[0] in configuration.
+              name: 'Cors__AllowedOrigins__0'
+              value: allowedCorsOrigin
             }
           ]
         }
