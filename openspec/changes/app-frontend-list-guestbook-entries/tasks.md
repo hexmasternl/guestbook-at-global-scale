@@ -72,3 +72,14 @@
 - [x] 10.5 Manually verify the responsive layout at a phone width, a tablet width, and a desktop width, including a deliberately long unbroken message, checking for no horizontal scrolling at any width.
 - [x] 10.6 Manually verify keyboard-only operation end to end: reach `/list` from the landing page's secondary CTA, page forward and back, retry after an error, and return via the back control.
 - [x] 10.7 Sanity-check the approximate-location output against real submitted entries and confirm the label reads as approximate with the coordinates visible next to it — note any specific country that resolves wrongly and decide, before the demo, whether it matters.
+
+## 11. Notes from implementation
+
+- **1.1 could not be done**: the HexMaster design-guidelines MCP server is not configured in this environment (only `angular-cli` is, in `frontend/guestbook/.mcp.json`). The change was built against the guidance the repo already records — ADR 0006, `AGENTS.md`/`CLAUDE.md`, and the precedents in `app-frontend-add-guestbook-entry`. **Re-run this check before merging.**
+- **Contract correction**: `GuestbookEntryDto` has seven fields, not six. The card shows `handledByRegion` (the backend that served the request), not `region` (the Cosmos partition). Artifacts were corrected before implementation.
+- **Found while verifying (1.2)**: the API returns a continuation token on what turns out to be the last page, so an empty page can follow a non-null token. The empty state is now split into "empty guestbook" (page 1) and "end of the list" (later pages).
+- **Found while verifying (10.4)**: a stopped API left requests hanging rather than failing — the page spun with `aria-busy="true"` past nine seconds. Requests now carry a 15s timeout so the error state is reachable when a region stops answering.
+- **Found while verifying (10.2)**: Angular Material's themed label colour measures ~2.8:1 on this background, below AA, and cannot be overridden from an encapsulated component. The back link and pagination controls are plain styled elements; the filled empty-state CTAs stay Material (6.4:1). Final sweep: 0 failures across 85 text elements, lowest 6.68:1.
+- **Known lookup misses (10.7)**: Toronto resolves to "United States", Buenos Aires to "Uruguay"; both are locked in as tests in `country-lookup.spec.ts`. Amsterdam, Berlin, Paris, Rome, Madrid, Istanbul, Tromsø, Nairobi, Seattle, Anchorage and Honolulu are correct. Fixing the misses needs border polygons.
+- **Backend gap, out of scope**: `GET /greetings?continuationToken=garbage` returns HTTP 500 rather than 400. The frontend only replays tokens the API returned, so it does not hit this. Worth a separate change.
+- **10.5 caveat**: Chrome refused to resize the maximized window, so the responsive check was done by constraining the container across 360–1024px (1 → 2 → 3 columns, no overflow at any width) rather than by resizing the viewport.
