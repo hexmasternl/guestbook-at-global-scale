@@ -1,4 +1,4 @@
-// ============================================================================
+tust weigharen vanavond vanavond lekker pizza eten what will u voor pizzanatures komen is halfpakken afspraak niemand ik zei op de trap maakt me niet uit jamis herom schop je ga je toen niet schoppen nee to gek ok that sort rare dingen doen
 //  Guestbook — multi-region backend (Container Apps + Cosmos DB + Front Door)
 // ============================================================================
 //
@@ -16,10 +16,11 @@
 param regions array = [
   //{ name: 'australiacentral', short: 'auc' } // Australia Central
   { name: 'westus', short: 'wus' } // West US
-  { name: 'westeurope', short: 'weu' } // West Europe
+  { name: 'northeurope', short: 'neu' } // West Europe
+  //{ name: 'westeurope', short: 'weu' } // West Europe
   // { name: 'eastus',           short: 'eus' } // East US
   // { name: 'southafricanorth', short: 'san' } // South Africa North
-  { name: 'westindia', short: 'win' } // West India
+  //{ name: 'westindia', short: 'win' } // West India
 ]
 // ============================================================================
 
