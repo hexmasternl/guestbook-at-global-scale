@@ -1,0 +1,94 @@
+<div class="guestbook-list">
+  <header class="guestbook-list__header">
+    <a class="guestbook-list__back" mat-button routerLink="/">
+      <span aria-hidden="true">←</span>
+      Back to the landing page
+    </a>
+
+    <h1 class="guestbook-list__heading" #listHeading tabindex="-1">Greetings from around the world</h1>
+
+    <p class="guestbook-list__lede">
+      Every greeting below was written by a visitor and answered by whichever Azure region
+      was closest to them. The location is approximated from the coordinates the greeting
+      was signed with.
+    </p>
+  </header>
+
+  @if (status() === 'error') {
+    <div class="guestbook-list__error" role="alert">
+      <p class="guestbook-list__error-text">{{ errorMessage() }}</p>
+      <button mat-flat-button type="button" (click)="retry()">Try again</button>
+    </div>
+  }
+
+  <section
+    class="guestbook-list__results"
+    aria-live="polite"
+    [attr.aria-busy]="isLoading()"
+    aria-label="Guestbook entries"
+  >
+    @if (isLoading()) {
+      <div class="guestbook-list__loading">
+        <mat-progress-spinner mode="indeterminate" diameter="40" />
+        <p class="guestbook-list__loading-text">Loading greetings…</p>
+      </div>
+    }
+
+    @if (isEmptyGuestbook()) {
+      <div class="guestbook-list__empty">
+        <p class="guestbook-list__empty-title">No greetings have been posted yet.</p>
+        <p class="guestbook-list__empty-body">
+          Be the first — head back to the landing page and sign the guestbook.
+        </p>
+        <a mat-flat-button routerLink="/">Sign the guestbook</a>
+      </div>
+    }
+
+    @if (isPastLastPage()) {
+      <div class="guestbook-list__empty">
+        <p class="guestbook-list__empty-title">You've reached the end of the guestbook.</p>
+        <p class="guestbook-list__empty-body">There are no more greetings past this point.</p>
+        <button mat-flat-button type="button" (click)="previousPage()">
+          Back to the previous page
+        </button>
+      </div>
+    }
+
+    @if (entries().length > 0) {
+      <ul class="guestbook-list__entries">
+        @for (entry of entries(); track entry.id) {
+          <li class="guestbook-list__entry">
+            <gkb-guestbook-entry-card [entry]="entry" [now]="renderedAt()" />
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <nav class="guestbook-list__pagination" aria-label="Guestbook pagination">
+    <button
+      class="guestbook-list__page-button"
+      mat-stroked-button
+      type="button"
+      [disabled]="!canGoPrevious()"
+      (click)="previousPage()"
+    >
+      <span aria-hidden="true">←</span>
+      Previous
+    </button>
+
+    <!-- No "of N": the API reports no total count, so claiming one would be a guess. -->
+    <span class="guestbook-list__page-indicator">Page {{ pageNumber() }}</span>
+
+    <button
+      class="guestbook-list__page-button"
+      mat-stroked-button
+      type="button"
+      [disabled]="!canGoNext()"
+      (click)="nextPage()"
+    >
+      Next
+      <span aria-hidden="true">→</span>
+    </button>
+  </nav>
+</div>

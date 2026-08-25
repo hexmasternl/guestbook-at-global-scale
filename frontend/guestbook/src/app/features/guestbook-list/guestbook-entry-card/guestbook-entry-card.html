@@ -1,0 +1,23 @@
+<article class="entry-card">
+  <blockquote class="entry-card__message">{{ entry().message }}</blockquote>
+
+  <footer class="entry-card__meta">
+    <p class="entry-card__location">
+      <span class="entry-card__pin" aria-hidden="true">📍</span>
+      @if (approximateCountry()) {
+        <span class="entry-card__place">{{ approximateCountry() }}</span>
+        <span class="entry-card__qualifier">approx.</span>
+      }
+      <span class="entry-card__coords">{{ coordinates() }}</span>
+    </p>
+
+    <div class="entry-card__meta-row">
+      <span class="entry-card__region" [title]="entry().handledByRegion">
+        <span class="entry-card__region-label">Handled by</span>
+        {{ regionName() }}
+      </span>
+
+      <time class="entry-card__time" [attr.datetime]="entry().ts">{{ relativeTime() }}</time>
+    </div>
+  </footer>
+</article>

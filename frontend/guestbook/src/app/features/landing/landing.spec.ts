@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { AddGuestbookEntry } from './add-guestbook-entry/add-guestbook-entry';
 import { Landing } from './landing';
@@ -10,7 +11,7 @@ describe('Landing', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Landing],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
   });
 
@@ -41,6 +42,35 @@ describe('Landing', () => {
     cta.click();
 
     expect(openSpy).toHaveBeenCalledWith(AddGuestbookEntry, { ariaLabel: 'Sign the guestbook' });
+  });
+
+  it('should link the secondary call-to-action to the guestbook list route', () => {
+    const fixture = TestBed.createComponent(Landing);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const secondary = compiled.querySelector('.hero__cta-secondary') as HTMLAnchorElement;
+
+    // An anchor, not a button: unlike the primary CTA, this one navigates.
+    expect(secondary.tagName).toBe('A');
+    expect(secondary.getAttribute('href')).toBe('/list');
+    expect(secondary.textContent).toContain('View the guestbook');
+  });
+
+  it('should keep the "how it works" section and its anchor target', () => {
+    const fixture = TestBed.createComponent(Landing);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('#how-it-works')).toBeTruthy();
+  });
+
+  it('should point the footer at the guestbook list', () => {
+    const fixture = TestBed.createComponent(Landing);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const footerLink = compiled.querySelector('.site-footer__link') as HTMLAnchorElement;
+
+    expect(footerLink.getAttribute('href')).toBe('/list');
   });
 });
 

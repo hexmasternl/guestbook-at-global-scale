@@ -13,7 +13,7 @@ export const routes: Routes = [
 ```
 GET /greetings?pageSize={10..250}&continuationToken={opaque}
 Response: 200 OK, ListGuestbookEntriesResponse {
-            entries: GuestbookEntryDto[],   // { id, message, lat, lng, region, ts }, ordered ts DESC
+            entries: GuestbookEntryDto[],   // { id, message, lat, lng, region, handledByRegion, ts }, ordered ts DESC
             continuationToken: string | null // null on the last page
           }
           400 ValidationProblem when pageSize is non-numeric or <= 0
@@ -23,6 +23,8 @@ Two properties of that contract shape everything below:
 
 1. **Pagination is forward-only.** Cosmos DB continuation tokens let you fetch *the next* page from a given position and nothing else. There is no offset, no total count (deliberately, per the API's design — a `COUNT` query is expensive and gets worse as the dataset grows), and therefore no page count and no jump-to-page.
 2. **There is no place name in the payload.** `GuestbookEntryDto` carries `lat`/`lng` only. Any human-readable origin location has to be derived, and the honest word for the result is "approximately."
+
+The DTO also carries **two distinct region values**, and the difference matters for this page. `region` is the Cosmos DB partition the entry lives in and may be repartitioned; `handledByRegion` is the Azure region of the backend instance that actually served the create request — as its own doc comment puts it, "what proves which datacenter served a given greeting." They start out holding the same value but are deliberately separate. The requested "data center region that handled the request" is therefore `handledByRegion`, and that is what the card displays; `region` is an internal storage detail and is not shown.
 
 Constraints in force:
 - ADR 0006 (centralized styling variables) — new component SCSS consumes `_variables.scss` tokens; no hardcoded colors/spacing/fonts.
@@ -91,6 +93,8 @@ private nextToken: string | null = null;   // from the latest response
 
 Fetching happens in a single `loadPage(token)` method that owns the `status` transitions, so Next, Previous, retry, and the initial load all share one code path.
 
+**A non-null token does not promise more entries.** Verified against the running API: with exactly 10 stored entries and `pageSize=10`, page one comes back with a non-null `continuationToken`, and following it yields an empty page. Cosmos hands back a token whenever a query *might* have more results, not only when it does. So "Next is enabled" cannot be read as "there is a next page with content", and an empty response is not proof the guestbook is empty — it depends on which page you are on. The empty state is therefore split in two (see decision 7).
+
 Alternative considered: infinite "Load more" appending to one growing list — simpler and a natural fit for continuation tokens, but the request explicitly asked for pagination, and a growing list makes it harder to point an audience at a specific greeting mid-demo. Alternative considered: numbered pages — impossible without a total count; faking it by pre-walking every page would mean N requests just to render a pager. Alternative considered: putting the continuation token in the URL as a query param so pages are linkable and survive a reload — rejected: the tokens are opaque, long, and Cosmos-implementation-specific, they would leak an internal detail into a user-visible URL, and a token pasted later may no longer be valid. `/list` always opens at page one.
 
 ### 4. Approximate origin location resolved offline, shown next to the real coordinates
@@ -105,7 +109,9 @@ Alternative considered: browser reverse-geocoding via a public service (Nominati
 
 ### 5. Azure region slugs mapped to friendly names, raw slug preserved on hover
 
-A small `region-names.ts` map (`westeurope` → "West Europe", `eastus` → "East US", `swedencentral` → "Sweden Central", and the other regions the Bicep templates deploy to) with a fallback returning the raw slug unchanged for anything unmapped, so a newly-added region degrades to something truthful rather than blank or wrong. The raw slug goes in a `title` attribute on the element. This matters for the talk: "West Europe" reads from the back of a room, and the region badge is the single most important thing on the card for the demo's argument, so it gets visual prominence.
+A small `region-names.ts` map (`westeurope` → "West Europe", `eastus` → "East US", `swedencentral` → "Sweden Central", and the other regions the Bicep templates deploy to) with a fallback returning the raw slug unchanged for anything unmapped, so a newly-added region degrades to something truthful rather than blank or wrong. `local` — the value `ConfigurationGuestbookRegionProvider` falls back to when `Guestbook:Region` is unset — is mapped too, since it is a value our own code produces and will be what a developer sees. The raw slug goes in a `title` attribute on the element. This matters for the talk: "West Europe" reads from the back of a room, and the region badge is the single most important thing on the card for the demo's argument, so it gets visual prominence.
+
+The badge renders `handledByRegion`, not `region` — see the Context note on why those differ.
 
 Alternative considered: raw slugs only — nothing to maintain, but `swedencentral` is a worse thing to project on a screen than "Sweden Central". Alternative considered: fetching region display names from an Azure API — a network dependency and an ARM permission for what is a static naming table.
 
@@ -119,7 +125,9 @@ Alternative considered: `MatCard`/`MatList` — Angular Material is the house co
 
 ### 7. Explicit `status` signal for the list states; the error state keeps the last good page
 
-`status = signal<'loading' | 'ready' | 'error'>('loading')` plus `entries = signal<GuestbookEntryDto[]>([])`, with "empty" derived (`computed(() => this.status() === 'ready' && this.entries().length === 0)`) rather than being a fourth status value, since empty is a property of a *successful* response and conflating the two would let an error masquerade as "no greetings yet." Empty renders an inviting prompt to go sign the guestbook rather than a bare "no results." Error renders an inline message plus a "Try again" control that re-invokes `loadPage` with the same token, and leaves the previously-rendered entries in place instead of blanking the list — a failed *next-page* request should not destroy what the visitor is already reading.
+`status = signal<'loading' | 'ready' | 'error'>('loading')` plus `entries = signal<GuestbookEntryDto[]>([])`, with "empty" derived (`computed(() => this.status() === 'ready' && this.entries().length === 0)`) rather than being a fourth status value, since empty is a property of a *successful* response and conflating the two would let an error masquerade as "no greetings yet."
+
+Empty then splits by page number, because of the token behavior noted in decision 3. On page one an empty response really does mean an empty guestbook, and renders an inviting prompt to go sign it. On any later page it means the visitor has walked off the end of the list, and renders "you've reached the end" with a way back — telling someone on page 3 that "no greetings have been posted yet" would be simply false. Error renders an inline message plus a "Try again" control that re-invokes `loadPage` with the same token, and leaves the previously-rendered entries in place instead of blanking the list — a failed *next-page* request should not destroy what the visitor is already reading.
 
 For accessibility under pagination, the list container is an `aria-live="polite"` region announcing the page change, the in-flight state is exposed via `aria-busy`, and after a page loads focus moves to the list's heading (a `tabindex="-1"` target) so a keyboard or screen-reader user is not left with focus on a "Next" button while the content behind them silently changes.
 

@@ -13,7 +13,7 @@
       <button class="hero__cta" mat-flat-button type="button" (click)="openAddGuestbookEntry()">
         Sign the guestbook
       </button>
-      <a class="hero__cta-secondary" href="#how-it-works">See how it works</a>
+      <a class="hero__cta-secondary" routerLink="/list">View the guestbook</a>
     </div>
   </div>
 
@@ -65,8 +65,10 @@
   <div class="site-footer__content">
     <h2 class="site-footer__heading">The interactive map is on its way</h2>
     <p class="site-footer__body">
-      You can already sign the guestbook — the live map showing everyone's pins is still on its
-      way. Check back soon to see the world light up.
+      You can already sign the guestbook and
+      <a class="site-footer__link" routerLink="/list">read every greeting</a> — including which
+      Azure region answered each one. The world map that plots them all as pins is still on its
+      way. Check back soon to see the globe light up.
     </p>
   </div>
 </footer>

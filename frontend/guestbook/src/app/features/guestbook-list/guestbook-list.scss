@@ -1,0 +1,156 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: linear-gradient(180deg, $color-hero-bg-start 0%, $color-page-bg 45%);
+  color: $color-headline;
+  font-family: $font-family-base;
+}
+
+.guestbook-list {
+  box-sizing: border-box;
+  max-width: $content-max-width;
+
+  // Mobile-first: tight gutters on a phone, opening up from the first breakpoint.
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-md $spacing-2xl;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__back {
+    margin-left: -$spacing-sm;
+    color: $color-subheadline;
+  }
+
+  &__heading {
+    margin: 0;
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+
+    // Focus lands here after each page change; the outline must be visible but the
+    // heading is not otherwise interactive, so it gets no hover/pointer affordance.
+    &:focus-visible {
+      outline: 2px solid $color-accent;
+      outline-offset: $spacing-xs;
+      border-radius: $radius-sm;
+    }
+  }
+
+  &__lede {
+    margin: 0;
+    max-width: 44rem;
+    color: $color-subheadline;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+  }
+
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+    padding: $spacing-md $spacing-lg;
+    border: 1px solid rgba($color-error, 0.4);
+    border-radius: $radius-md;
+    background: rgba($color-error, 0.08);
+  }
+
+  &__error-text {
+    margin: 0;
+    color: $color-error;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+  }
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-2xl 0;
+  }
+
+  &__loading-text {
+    margin: 0;
+    color: $color-body-muted;
+    font-size: $font-size-sm;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    border: 1px dashed $color-surface-glass-border;
+    border-radius: $radius-md;
+    background: $color-surface-glass;
+  }
+
+  &__empty-title {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
+  }
+
+  &__empty-body {
+    margin: 0;
+    color: $color-subheadline;
+    line-height: $line-height-normal;
+  }
+
+  &__entries {
+    display: grid;
+    gap: $spacing-md;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    // Single column on a phone; the grid widens only where a card can hold its own.
+    grid-template-columns: 1fr;
+  }
+
+  &__pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+  }
+
+  &__page-indicator {
+    color: $color-body-muted;
+    font-size: $font-size-sm;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (min-width: 40rem) {
+  .guestbook-list {
+    padding: $spacing-2xl $spacing-xl $spacing-3xl;
+
+    &__heading {
+      font-size: $font-size-2xl;
+    }
+
+    &__entries {
+      grid-template-columns: repeat(auto-fit, minmax($card-min-width, 1fr));
+      gap: $spacing-lg;
+    }
+
+    &__pagination {
+      justify-content: space-between;
+    }
+  }
+}

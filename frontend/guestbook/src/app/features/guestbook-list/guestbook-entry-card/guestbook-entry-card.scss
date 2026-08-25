@@ -1,0 +1,113 @@
+@use 'variables' as *;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  height: 100%;
+  box-sizing: border-box;
+  padding: $spacing-lg;
+  border: 1px solid $color-surface-glass-border;
+  border-radius: $radius-md;
+  background: $color-card-surface;
+  font-family: $font-family-base;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    transform $transition-fast;
+
+  &:hover {
+    background: $color-card-surface-hover;
+    border-color: rgba($color-accent, 0.35);
+    transform: translateY(-2px);
+  }
+
+  &__message {
+    margin: 0;
+    flex: 1;
+    color: $color-headline;
+    font-size: $font-size-lg;
+    line-height: $line-height-normal;
+
+    // Guestbook messages are visitor-supplied: a long unbroken run of characters must
+    // wrap inside the card rather than widening it and scrolling the page sideways.
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__location {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $spacing-xs;
+    margin: 0;
+    color: $color-body-muted;
+    font-size: $font-size-sm;
+  }
+
+  &__place {
+    color: $color-subheadline;
+    font-weight: $font-weight-medium;
+  }
+
+  &__qualifier {
+    font-size: $font-size-sm;
+    opacity: 0.75;
+  }
+
+  &__coords {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__region {
+    display: inline-flex;
+    align-items: baseline;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    border: 1px solid $color-region-badge-border;
+    border-radius: $radius-pill;
+    background: $color-region-badge-bg;
+    color: $color-region-badge-text;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+
+  &__region-label {
+    opacity: 0.8;
+    font-weight: $font-weight-normal;
+  }
+
+  &__time {
+    color: $color-body-muted;
+    font-size: $font-size-sm;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-card {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}

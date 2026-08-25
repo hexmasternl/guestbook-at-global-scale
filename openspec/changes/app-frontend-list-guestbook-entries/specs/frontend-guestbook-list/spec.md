@@ -57,15 +57,20 @@ Each rendered entry SHALL display the message posted by the visitor, an approxim
 - **WHEN** an entry's coordinates do not resolve to any known place
 - **THEN** the entry still renders with its message, region, and time, showing the coordinates without an approximate place name, and no error is surfaced to the visitor
 
+#### Scenario: The region shown is the one that handled the request
+
+- **WHEN** an entry's data-center region is displayed
+- **THEN** the value shown is the region of the backend instance that handled the create request (`handledByRegion`), not the storage partition the entry lives in (`region`)
+
 #### Scenario: Known data-center region is shown as a readable name
 
-- **WHEN** an entry's region value matches a known data-center region
+- **WHEN** an entry's handling region value matches a known data-center region
 - **THEN** a human-readable display name for that region is shown
 - **AND** the exact region value returned by the API remains available to the visitor
 
 #### Scenario: Unknown data-center region falls back to the raw value
 
-- **WHEN** an entry's region value does not match any known data-center region
+- **WHEN** an entry's handling region value does not match any known data-center region
 - **THEN** the region value returned by the API is displayed unchanged, rather than being shown as blank, unknown, or mapped to an incorrect name
 
 #### Scenario: Posting time is readable and precise
@@ -133,9 +138,15 @@ The guestbook list page SHALL distinguish between a request in progress, a succe
 
 #### Scenario: No entries exist yet
 
-- **WHEN** the API returns a successful response containing no entries
+- **WHEN** the API returns a successful response containing no entries and the visitor is on the first page
 - **THEN** the page displays a message stating that no greetings have been posted yet, together with an invitation to sign the guestbook
 - **AND** this state is visually and semantically distinct from an error state
+
+#### Scenario: An empty page beyond the first is reported as the end of the list
+
+- **WHEN** the API returns a successful response containing no entries and the visitor is on a page after the first (which the API permits, since it can return a continuation token on what turns out to be the last page)
+- **THEN** the page states that the end of the guestbook has been reached, rather than claiming that no greetings have been posted
+- **AND** the visitor is offered a way back to the previous page
 
 #### Scenario: Request fails
 

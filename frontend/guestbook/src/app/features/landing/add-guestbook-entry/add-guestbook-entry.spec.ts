@@ -5,8 +5,8 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AddGuestbookEntry } from './add-guestbook-entry';
-import { GuestbookApi } from './guestbook-api';
-import { GuestbookEntryDto } from './guestbook-entry.models';
+import { GuestbookApi } from '../../../core/guestbook/guestbook-api';
+import { GuestbookEntryDto } from '../../../core/guestbook/guestbook-entry.models';
 
 /** Stubs `navigator.geolocation` to resolve (or fail) with the given coordinates. */
 function stubGeolocation(coords: { lat: number; lng: number } | undefined): void {

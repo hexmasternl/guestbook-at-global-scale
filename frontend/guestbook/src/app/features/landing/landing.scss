@@ -263,6 +263,18 @@
     line-height: $line-height-normal;
     color: $color-body-muted;
   }
+
+  &__link {
+    color: $color-accent;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color $transition-fast;
+
+    &:hover,
+    &:focus-visible {
+      color: $color-headline;
+    }
+  }
 }
 
 @keyframes hero-content-in {

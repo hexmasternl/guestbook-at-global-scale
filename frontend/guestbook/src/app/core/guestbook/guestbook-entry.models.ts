@@ -16,3 +16,18 @@ export interface GuestbookEntryDto {
   handledByRegion: string;
   ts: string;
 }
+
+/** Query parameters for `GET /greetings`. Both are optional; omitting `pageSize` lets the API apply its own default. */
+export interface ListGuestbookEntriesOptions {
+  pageSize?: number;
+  continuationToken?: string;
+}
+
+/**
+ * Response shape for `GET /greetings`, matching the API's `ListGuestbookEntriesResponse`.
+ * `continuationToken` is `null` once the last page has been reached.
+ */
+export interface ListGuestbookEntriesResponse {
+  entries: GuestbookEntryDto[];
+  continuationToken: string | null;
+}
