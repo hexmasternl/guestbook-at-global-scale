@@ -14,12 +14,12 @@
 //
 @minLength(1)
 param regions array = [
-  { name: 'australiacentral', short: 'auc' } // Australia Central
+  //{ name: 'australiacentral', short: 'auc' } // Australia Central
   { name: 'westus', short: 'wus' } // West US
   { name: 'westeurope', short: 'weu' } // West Europe
   // { name: 'eastus',           short: 'eus' } // East US
   // { name: 'southafricanorth', short: 'san' } // South Africa North
-  // { name: 'westindia',        short: 'win' } // West India
+  { name: 'westindia', short: 'win' } // West India
 ]
 // ============================================================================
 
@@ -69,11 +69,13 @@ resource centralResourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = 
   tags: tags
 }
 
-resource regionResourceGroups 'Microsoft.Resources/resourceGroups@2024-07-01' = [for r in regions: {
-  name: '${resourcePrefix}-${r.short}-rg'
-  location: r.name
-  tags: tags
-}]
+resource regionResourceGroups 'Microsoft.Resources/resourceGroups@2024-07-01' = [
+  for r in regions: {
+    name: '${resourcePrefix}-${r.short}-rg'
+    location: r.name
+    tags: tags
+  }
+]
 
 // ---------------------------------------------------------------------------
 // CENTRAL: shared user-assigned managed identity (Cosmos data-plane auth).
@@ -107,23 +109,25 @@ module cosmos 'modules/cosmos.bicep' = {
 // ---------------------------------------------------------------------------
 // PER REGION: one resource group (above) with a Container Apps environment + app.
 // ---------------------------------------------------------------------------
-module regionDeployments 'modules/region.bicep' = [for (r, i) in regions: {
-  scope: regionResourceGroups[i]
-  name: 'region-${r.short}'
-  params: {
-    regionName: r.name
-    regionShort: r.short
-    namePrefix: resourcePrefix
-    containerImage: containerImage
-    registryLoginServer: registryLoginServer
-    registryUsername: registryUsername
-    registryPassword: registryPassword
-    identityId: identity.outputs.identityId
-    identityClientId: identity.outputs.clientId
-    cosmosEndpoint: cosmos.outputs.endpoint
-    tags: tags
+module regionDeployments 'modules/region.bicep' = [
+  for (r, i) in regions: {
+    scope: regionResourceGroups[i]
+    name: 'region-${r.short}'
+    params: {
+      regionName: r.name
+      regionShort: r.short
+      namePrefix: resourcePrefix
+      containerImage: containerImage
+      registryLoginServer: registryLoginServer
+      registryUsername: registryUsername
+      registryPassword: registryPassword
+      identityId: identity.outputs.identityId
+      identityClientId: identity.outputs.clientId
+      cosmosEndpoint: cosmos.outputs.endpoint
+      tags: tags
+    }
   }
-}]
+]
 
 // ---------------------------------------------------------------------------
 // CENTRAL: Front Door — profile + endpoint + origin group.
@@ -141,16 +145,18 @@ module frontDoor 'modules/frontdoor.bicep' = {
 // One Front Door origin per region. This is a RESOURCE-level module loop, so each origin
 // can take a regional Container App FQDN (a cross-resource-group deployment output) as a
 // scalar — a property-level loop over the same outputs hits an ARM copy-index limitation.
-module frontDoorOrigins 'modules/frontdoor-origin.bicep' = [for (r, i) in regions: {
-  scope: centralResourceGroup
-  name: 'frontdoor-origin-${r.short}'
-  params: {
-    profileName: frontDoor.outputs.profileName
-    originGroupName: frontDoor.outputs.originGroupName
-    originName: 'origin-${r.short}'
-    host: regionDeployments[i].outputs.fqdn
+module frontDoorOrigins 'modules/frontdoor-origin.bicep' = [
+  for (r, i) in regions: {
+    scope: centralResourceGroup
+    name: 'frontdoor-origin-${r.short}'
+    params: {
+      profileName: frontDoor.outputs.profileName
+      originGroupName: frontDoor.outputs.originGroupName
+      originName: 'origin-${r.short}'
+      host: regionDeployments[i].outputs.fqdn
+    }
   }
-}]
+]
 
 // The route is created after all origins exist so the origin group is non-empty.
 module frontDoorRoute 'modules/frontdoor-route.bicep' = {
