@@ -23,6 +23,7 @@ public sealed class CosmosGuestbookEntryRepository : IGuestbookEntryRepository
             Lat = entry.Lat,
             Lng = entry.Lng,
             Region = entry.Region,
+            HandledByRegion = entry.HandledByRegion,
             Ts = entry.Ts
         };
 
@@ -45,6 +46,15 @@ public sealed class CosmosGuestbookEntryRepository : IGuestbookEntryRepository
         return new GuestbookEntryPage(entries, nextToken);
     }
 
+    // Entries written before handledByRegion existed fall back to the partition key, which
+    // held the same value — the region that handled the create request.
     private static GuestbookEntry ToDomainEntry(GuestbookEntryDocument document) =>
-        GuestbookEntry.Restore(Guid.Parse(document.Id), document.Message, document.Lat, document.Lng, document.Region, document.Ts);
+        GuestbookEntry.Restore(
+            Guid.Parse(document.Id),
+            document.Message,
+            document.Lat,
+            document.Lng,
+            document.Region,
+            document.HandledByRegion ?? document.Region,
+            document.Ts);
 }

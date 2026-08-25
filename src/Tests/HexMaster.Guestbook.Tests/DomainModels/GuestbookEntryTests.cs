@@ -18,6 +18,23 @@ public sealed class GuestbookEntryTests
         Assert.Equal(lat, entry.Lat);
         Assert.Equal(lng, entry.Lng);
         Assert.Equal("westeurope", entry.Region);
+        Assert.Equal("westeurope", entry.HandledByRegion);
+    }
+
+    [Fact]
+    public void Restore_ShouldKeepHandledByRegion_WhenItDiffersFromThePartition()
+    {
+        var entry = GuestbookEntry.Restore(
+            Guid.NewGuid(),
+            "hi",
+            0,
+            0,
+            "westeurope",
+            "swedencentral",
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal("westeurope", entry.Region);
+        Assert.Equal("swedencentral", entry.HandledByRegion);
     }
 
     [Theory]

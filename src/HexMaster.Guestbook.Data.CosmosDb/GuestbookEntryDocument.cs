@@ -28,6 +28,14 @@ public sealed class GuestbookEntryDocument
     [JsonProperty("region")]
     public required string Region { get; init; }
 
+    /// <summary>
+    /// Azure region of the backend that handled the create request. Nullable rather than
+    /// <c>required</c> because documents written before this field existed do not carry it;
+    /// readers fall back to <see cref="Region"/> for those.
+    /// </summary>
+    [JsonProperty("handledByRegion")]
+    public string? HandledByRegion { get; init; }
+
     [JsonProperty("ts")]
     public required DateTimeOffset Ts { get; init; }
 }

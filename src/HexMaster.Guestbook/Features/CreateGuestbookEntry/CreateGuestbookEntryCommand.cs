@@ -8,4 +8,5 @@ public sealed record CreateGuestbookEntryResult(
     double Lat,
     double Lng,
     string Region,
+    string HandledByRegion,
     DateTimeOffset Ts);

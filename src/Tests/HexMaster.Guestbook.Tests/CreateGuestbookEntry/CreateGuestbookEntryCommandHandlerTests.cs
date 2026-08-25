@@ -41,6 +41,7 @@ public sealed class CreateGuestbookEntryCommandHandlerTests
         Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(message, result.Message);
         Assert.Equal("westeurope", result.Region);
+        Assert.Equal("westeurope", result.HandledByRegion);
         _mockRepository.Verify(x => x.AddAsync(It.IsAny<GuestbookEntry>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 

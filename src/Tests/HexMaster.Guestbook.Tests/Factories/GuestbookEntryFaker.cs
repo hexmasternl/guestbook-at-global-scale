@@ -41,6 +41,7 @@ public static class GuestbookEntryFaker
                 Faker.Address.Latitude(),
                 Faker.Address.Longitude(),
                 region,
+                region,
                 ts));
         }
 

@@ -42,7 +42,14 @@ public static class GuestbookEndpoints
         var command = new CreateGuestbookEntryCommand(request.Message, request.Lat, request.Lng, clientIp);
         var result = await handler.Handle(command, ct);
 
-        var dto = new GuestbookEntryDto(result.Id, result.Message, result.Lat, result.Lng, result.Region, result.Ts);
+        var dto = new GuestbookEntryDto(
+            result.Id,
+            result.Message,
+            result.Lat,
+            result.Lng,
+            result.Region,
+            result.HandledByRegion,
+            result.Ts);
         return Results.Created($"/greetings/{result.Id}", dto);
     }
 
@@ -59,7 +66,7 @@ public static class GuestbookEndpoints
         var result = await handler.Handle(query, ct);
 
         var dtos = result.Entries
-            .Select(e => new GuestbookEntryDto(e.Id, e.Message, e.Lat, e.Lng, e.Region, e.Ts))
+            .Select(e => new GuestbookEntryDto(e.Id, e.Message, e.Lat, e.Lng, e.Region, e.HandledByRegion, e.Ts))
             .ToList();
 
         var response = new ListGuestbookEntriesResponse(dtos, result.ContinuationToken);

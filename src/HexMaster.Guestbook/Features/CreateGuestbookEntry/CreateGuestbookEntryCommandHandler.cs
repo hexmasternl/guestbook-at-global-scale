@@ -32,8 +32,18 @@ public sealed class CreateGuestbookEntryCommandHandler(
 
         await repository.AddAsync(entry, ct);
 
-        logger.LogInformation("Guestbook entry {EntryId} created for region {Region}", entry.Id, entry.Region);
+        logger.LogInformation(
+            "Guestbook entry {EntryId} created by backend region {HandledByRegion}",
+            entry.Id,
+            entry.HandledByRegion);
 
-        return new CreateGuestbookEntryResult(entry.Id, entry.Message, entry.Lat, entry.Lng, entry.Region, entry.Ts);
+        return new CreateGuestbookEntryResult(
+            entry.Id,
+            entry.Message,
+            entry.Lat,
+            entry.Lng,
+            entry.Region,
+            entry.HandledByRegion,
+            entry.Ts);
     }
 }

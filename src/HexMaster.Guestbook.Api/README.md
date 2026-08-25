@@ -17,3 +17,22 @@ network call is involved. The dataset is gzip-compressed (~14 MB, well under Git
   identically with no configuration.
 - **Fail-safe**: any failure (unparsable/unmapped IP, unknown country code) resolves to a
   fixed `(0, 0)` sentinel and logs at `Debug`; it never fails the request or API startup.
+
+## Proving which datacenter handled a request (`handledByRegion`)
+
+Every regional Container App is handed its own Azure region as the `Guestbook__Region`
+environment variable (`infra/modules/region.bicep`), read by
+`ConfigurationGuestbookRegionProvider` and defaulting to `local` outside Azure.
+
+`POST /greet` stamps that value onto the entry as `handledByRegion` before persisting it,
+and both `POST /greet` and `GET /greetings` return it — so a greeting carries permanent,
+verifiable proof of which datacenter served the write, whichever region you happen to be
+reading it back from.
+
+- **Separate from `region`**: `region` is the Cosmos DB partition key. It is seeded from
+  the same value today, but partition keys are immutable and the partitioning strategy may
+  change (the plan floats `/id`), so provenance gets its own field rather than riding on
+  the key.
+- **Backward compatible**: documents written before this field existed have no
+  `handledByRegion`; the repository falls back to their `region`, which held the same
+  value. No migration or backfill needed.
