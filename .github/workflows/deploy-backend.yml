@@ -10,6 +10,7 @@ on:
     paths:
       - 'infra/**'
       - 'src/**'
+      - 'frontend/**'
       - '.github/workflows/deploy-backend.yml'
 
 # OIDC federation to Azure — no stored cloud credentials.
@@ -33,6 +34,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Build the Angular frontend (production config bakes in the Front Door
+      # apiBaseUrl from src/environments/environment.ts). Output → dist/guestbook/browser.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/guestbook/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend/guestbook
+        run: |
+          npm ci
+          npm run build -- --configuration production
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -94,6 +110,9 @@ jobs:
                 containerImage="$IMAGE" \
               --query properties.outputs -o json)
             fd=$(echo "$outputs" | jq -r .frontDoorHostName.value)
+            # Storage account that hosts the frontend static website (central RG).
+            echo "STATIC_SITE_ACCOUNT=$(echo "$outputs" | jq -r .staticWebsiteStorageAccountName.value)" >> "$GITHUB_ENV"
+            echo "STATIC_SITE_ENDPOINT=$(echo "$outputs" | jq -r .staticWebsiteEndpoint.value)" >> "$GITHUB_ENV"
             {
               echo "## Guestbook backend deployed"
               echo ""
@@ -105,4 +124,29 @@ jobs:
               echo ""
               echo "**Regional resource groups:**"
               echo "$outputs" | jq -r '.regionResourceGroupNames.value[] | "- \(.)"'
+            } >> "$GITHUB_STEP_SUMMARY"
+
+      # Enable Storage static website hosting on the central storage account, then
+      # upload the built Angular app to the `$web` container. `--auth-mode key` uses
+      # the account key (fetched automatically by the CLI) so no data-plane RBAC role
+      # is required on the deployment principal.
+      - name: Deploy frontend (static website)
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az storage blob service-properties update \
+              --account-name "$STATIC_SITE_ACCOUNT" \
+              --auth-mode key \
+              --static-website \
+              --index-document index.html \
+              --404-document index.html
+            az storage blob upload-batch \
+              --account-name "$STATIC_SITE_ACCOUNT" \
+              --auth-mode key \
+              --destination '$web' \
+              --source frontend/guestbook/dist/guestbook/browser \
+              --overwrite
+            {
+              echo ""
+              echo "**Frontend static website:** $STATIC_SITE_ENDPOINT"
             } >> "$GITHUB_STEP_SUMMARY"

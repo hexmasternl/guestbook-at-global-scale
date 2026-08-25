@@ -1,8 +1,7 @@
-// Production environment configuration. `apiBaseUrl` is a same-origin
-// relative path by default; replace with the deployed API's origin once
-// frontend hosting/deployment topology (Static Web App / Front Door) is
-// finalized in a later change.
+// Production environment configuration. `apiBaseUrl` points at the Front Door
+// endpoint that fronts the multi-region guestbook API. No trailing slash — the
+// API client composes paths as `${apiBaseUrl}/greet`.
 export const environment = {
   production: true,
-  apiBaseUrl: '',
+  apiBaseUrl: 'https://guestbook-q5wmb35uerjzy-grfyhjbkgegrfscm.z01.azurefd.net',
 };

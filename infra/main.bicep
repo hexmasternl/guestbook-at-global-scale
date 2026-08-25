@@ -130,6 +130,21 @@ module regionDeployments 'modules/region.bicep' = [
 ]
 
 // ---------------------------------------------------------------------------
+// CENTRAL: storage account hosting the Angular frontend as a static website.
+// Static website hosting + content upload happen in the deploy workflow.
+// ---------------------------------------------------------------------------
+module staticSite 'modules/staticsite.bicep' = {
+  scope: centralResourceGroup
+  name: 'staticsite'
+  params: {
+    location: centralLocation
+    // Storage account names are capped at 24 chars; `take` keeps us within limit.
+    storageAccountName: take(toLower('${resourcePrefix}web${suffix}'), 24)
+    tags: tags
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CENTRAL: Front Door — profile + endpoint + origin group.
 // ---------------------------------------------------------------------------
 module frontDoor 'modules/frontdoor.bicep' = {
@@ -180,6 +195,12 @@ output cosmosEndpoint string = cosmos.outputs.endpoint
 
 @description('Central resource group name.')
 output centralResourceGroupName string = centralResourceGroup.name
+
+@description('Storage account (central RG) that hosts the frontend static website.')
+output staticWebsiteStorageAccountName string = staticSite.outputs.storageAccountName
+
+@description('Primary static-website endpoint of the frontend storage account.')
+output staticWebsiteEndpoint string = staticSite.outputs.primaryWebEndpoint
 
 @description('Per-region resource group names (each holds that region Container App).')
 output regionResourceGroupNames array = [for r in regions: '${resourcePrefix}-${r.short}-rg']
