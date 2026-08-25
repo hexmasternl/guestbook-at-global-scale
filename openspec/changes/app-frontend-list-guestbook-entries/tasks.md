@@ -1,7 +1,7 @@
 ## 1. Pre-flight
 
 - [ ] 1.1 Re-check the HexMaster design-guidelines MCP server (`list_docs`, `search_docs`, `get_doc`) for any frontend-relevant ADR, recommendation, or structure template governing Angular routing, feature-folder layout, shared services, or styling; reconcile design.md's decisions with whatever it says and flag any conflict before writing code (the server was not connected when this change was planned).
-- [ ] 1.2 Confirm `GET /greetings` responds as documented against the locally-running API (empty result, populated result, and a `continuationToken` round trip) so the frontend is built against observed behavior rather than the contract on paper.
+- [x] 1.2 Confirm `GET /greetings` responds as documented against the locally-running API (empty result, populated result, and a `continuationToken` round trip) so the frontend is built against observed behavior rather than the contract on paper.
 
 ## 2. Shared API client and models
 
@@ -66,9 +66,9 @@
 ## 10. Verification
 
 - [x] 10.1 Run `npm run build` and `npm test` in `frontend/guestbook` and confirm both succeed with all new and updated specs passing.
-- [ ] 10.2 Run an accessibility check (AXE) against `/list` in its populated, empty, loading, and error states, and confirm no violations — paying particular attention to contrast on the region badge, the live-region announcement, and focus placement after a page change.
-- [ ] 10.3 Manually verify against the local API with more entries than one page holds: the list renders newest-first; Next and Previous move as expected; Next is disabled on the last page and Previous on the first; the page indicator shows no total.
-- [ ] 10.4 Manually verify the empty state against a guestbook with no entries, and the error state by stopping the API mid-session — confirming the already-rendered entries survive the failure and "Try again" recovers.
-- [ ] 10.5 Manually verify the responsive layout at a phone width, a tablet width, and a desktop width, including a deliberately long unbroken message, checking for no horizontal scrolling at any width.
-- [ ] 10.6 Manually verify keyboard-only operation end to end: reach `/list` from the landing page's secondary CTA, page forward and back, retry after an error, and return via the back control.
-- [ ] 10.7 Sanity-check the approximate-location output against real submitted entries and confirm the label reads as approximate with the coordinates visible next to it — note any specific country that resolves wrongly and decide, before the demo, whether it matters.
+- [x] 10.2 Run an accessibility check (AXE) against `/list` in its populated, empty, loading, and error states, and confirm no violations — paying particular attention to contrast on the region badge, the live-region announcement, and focus placement after a page change.
+- [x] 10.3 Manually verify against the local API with more entries than one page holds: the list renders newest-first; Next and Previous move as expected; Next is disabled on the last page and Previous on the first; the page indicator shows no total.
+- [x] 10.4 Manually verify the empty state against a guestbook with no entries, and the error state by stopping the API mid-session — confirming the already-rendered entries survive the failure and "Try again" recovers.
+- [x] 10.5 Manually verify the responsive layout at a phone width, a tablet width, and a desktop width, including a deliberately long unbroken message, checking for no horizontal scrolling at any width.
+- [x] 10.6 Manually verify keyboard-only operation end to end: reach `/list` from the landing page's secondary CTA, page forward and back, retry after an error, and return via the back control.
+- [x] 10.7 Sanity-check the approximate-location output against real submitted entries and confirm the label reads as approximate with the coordinates visible next to it — note any specific country that resolves wrongly and decide, before the demo, whether it matters.
