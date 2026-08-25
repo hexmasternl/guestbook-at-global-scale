@@ -53,22 +53,20 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Image version: $VERSION"
 
-      # Build the image (GeoIP DB baked in via MAXMIND_LICENSE_KEY) and push it to the
+      # Build the image (IP→location data is embedded in the app) and push it to the
       # existing central ACR using the registry credentials from GitHub Secrets.
       - name: Build and push image
         env:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_LOGIN_USERNAME: ${{ secrets.ACR_LOGIN_USERNAME }}
           ACR_LOGIN_PASSWORD: ${{ secrets.ACR_LOGIN_PASSWORD }}
-          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # ACR_LOGIN_PASSWORD / MAXMIND_LICENSE_KEY are masked secrets; never echo them.
+          # ACR_LOGIN_PASSWORD is a masked secret; never echo it.
           echo "$ACR_LOGIN_PASSWORD" | docker login "$ACR_LOGIN_SERVER" \
             --username "$ACR_LOGIN_USERNAME" --password-stdin
           IMAGE="$ACR_LOGIN_SERVER/$IMAGE_REPOSITORY:$VERSION"
           docker build \
-            --build-arg MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" \
             -f src/HexMaster.Guestbook.Api/Dockerfile \
             -t "$IMAGE" \
             .

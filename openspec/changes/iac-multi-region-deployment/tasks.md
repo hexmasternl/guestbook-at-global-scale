@@ -38,7 +38,7 @@
 - [x] 6.1 Create `.github/workflows/deploy-backend.yml` with `workflow_dispatch` and `push` (paths `infra/**`, `src/**`) triggers and `id-token: write` permission
 - [x] 6.2 Add `azure/login@v2` OIDC step using `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` secrets; `az group create` (idempotent)
 - [x] 6.3 Compute a semantic-version tag (`MAJOR.MINOR.<run-number>`) inside the workflow
-- [x] 6.4 `docker login` to the central ACR with `ACR_LOGIN_*` secrets, then `docker build` with `--build-arg MAXMIND_LICENSE_KEY=…` against `src/HexMaster.Guestbook.Api/Dockerfile`, tag `global-guestbook/guestbook-api:<semver>`, and push
+- [x] 6.4 `docker login` to the central ACR with `ACR_LOGIN_*` secrets, then `docker build` against `src/HexMaster.Guestbook.Api/Dockerfile`, tag `global-guestbook/guestbook-api:<semver>`, and push
 - [x] 6.5 Deploy `main.bicep` passing `registryLoginServer`/`registryUsername`/`registryPassword` + `containerImage`; output the Front Door hostname to the job summary
 
 ## 6b. Container hardening & naming (C# project)
@@ -48,7 +48,7 @@
 
 > **Live-deploy tasks (2.2, 7.2–7.4) require running against your Azure subscription** —
 > they provision real, cost-incurring resources and are left for you to run via the
-> workflow (with OIDC + `MAXMIND_LICENSE_KEY` secrets configured). All templates and the
+> workflow (with OIDC + `ACR_LOGIN_*` secrets configured). All templates and the
 > workflow are authored and compile/lint clean.
 
 ## 7. Validation & verification

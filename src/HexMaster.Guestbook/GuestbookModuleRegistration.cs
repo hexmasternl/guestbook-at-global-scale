@@ -4,7 +4,6 @@ using HexMaster.Guestbook.Features.ListGuestbookEntries;
 using HexMaster.Guestbook.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace HexMaster.Guestbook;
 
@@ -15,10 +14,9 @@ public static class GuestbookModuleRegistration
         services.AddScoped<ICommandHandler<CreateGuestbookEntryCommand, CreateGuestbookEntryResult>, CreateGuestbookEntryCommandHandler>();
         services.AddScoped<IQueryHandler<ListGuestbookEntriesQuery, ListGuestbookEntriesResult>, ListGuestbookEntriesQueryHandler>();
         services.AddSingleton<IGuestbookRegionProvider, ConfigurationGuestbookRegionProvider>();
-        services.AddSingleton<IClientLocationResolver>(provider =>
-            new MaxMindClientLocationResolver(
-                configuration["Guestbook:GeoIp:DatabasePath"],
-                provider.GetRequiredService<ILogger<MaxMindClientLocationResolver>>()));
+        // IP → location is resolved from the embedded Resources/GeoIp.csv.gz dataset,
+        // decompressed and parsed once into an in-memory lookup (no external database or download).
+        services.AddSingleton<IClientLocationResolver, CsvClientLocationResolver>();
 
         return services;
     }

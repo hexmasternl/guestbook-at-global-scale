@@ -6,10 +6,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MaxMind.GeoIP2" Version="6.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+  </ItemGroup>
+
+  <!-- The IP → country dataset is embedded in the assembly (gzip-compressed to stay
+       well under GitHub's 100 MB file limit) and parsed into an in-memory lookup at
+       startup (CsvClientLocationResolver). No external database or download is required.
+       Format per row (decompressed): type,startNum,endNum,CC  e.g. 4,16778240,16779263,AU -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\GeoIp.csv.gz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HexMaster.Guestbook.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

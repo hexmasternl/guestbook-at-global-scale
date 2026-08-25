@@ -90,7 +90,6 @@ the run summary.
    | `ACR_LOGIN_SERVER` | Central ACR login server (e.g. `myregistry.azurecr.io`) |
    | `ACR_LOGIN_USERNAME` | Central ACR username (used to push and pull) |
    | `ACR_LOGIN_PASSWORD` | Central ACR password |
-   | `MAXMIND_LICENSE_KEY` | MaxMind license key ([free account](https://www.maxmind.com/en/geolite2/signup)); baked into the image, never logged or committed |
 
 3. Adjust `RESOURCE_GROUP` / `LOCATION` / `RESOURCE_PREFIX` / `VERSION_MAJOR_MINOR` in the
    workflow `env:` if desired.
@@ -101,7 +100,7 @@ the run summary.
 az group create -n guestbook-rg -l westeurope
 # Build + push the image to the central ACR (from repo root):
 echo "$ACR_LOGIN_PASSWORD" | docker login "$ACR_LOGIN_SERVER" -u "$ACR_LOGIN_USERNAME" --password-stdin
-docker build --build-arg MAXMIND_LICENSE_KEY=<key> \
+docker build \
   -f src/HexMaster.Guestbook.Api/Dockerfile \
   -t "$ACR_LOGIN_SERVER/global-guestbook/guestbook-api:1.0.0" .
 docker push "$ACR_LOGIN_SERVER/global-guestbook/guestbook-api:1.0.0"

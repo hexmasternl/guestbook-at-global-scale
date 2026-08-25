@@ -2,17 +2,17 @@
 
 ### Requirement: Build and publish the API container image
 
-The deployment pipeline SHALL build the Guestbook API image from `src/HexMaster.Guestbook.Api/Dockerfile`, supplying the `MAXMIND_LICENSE_KEY` as a masked secret build argument, tag it `global-guestbook/guestbook-api` with a semantic version, and push it to the existing central container registry using the registry credentials. The image SHALL run as a non-root (non-privileged) user. The license key and registry password SHALL NOT be printed to logs or committed to source control.
+The deployment pipeline SHALL build the Guestbook API image from `src/HexMaster.Guestbook.Api/Dockerfile`, tag it `global-guestbook/guestbook-api` with a semantic version, and push it to the existing central container registry using the registry credentials. The image SHALL run as a non-root (non-privileged) user. The IP→location dataset is embedded in the application, so no external database, license key, or download is required. The registry password SHALL NOT be printed to logs or committed to source control.
 
 #### Scenario: Image built and pushed with a semantic version tag
 
 - **WHEN** the pipeline runs
-- **THEN** a `global-guestbook/guestbook-api` image with a semantic-version tag is built with the GeoIP database baked in, configured to run as a non-root user, and pushed to the central registry
+- **THEN** a `global-guestbook/guestbook-api` image with a semantic-version tag is built (IP→location data embedded in the app), configured to run as a non-root user, and pushed to the central registry
 
-#### Scenario: License key kept secret
+#### Scenario: Registry password kept secret
 
-- **WHEN** the image build runs
-- **THEN** the MaxMind license key is provided from a stored secret and does not appear in workflow logs or the repository
+- **WHEN** the image is pushed
+- **THEN** the registry password is provided from a stored secret and does not appear in workflow logs or the repository
 
 ### Requirement: Deploy infrastructure via OIDC-authenticated Bicep deployment
 

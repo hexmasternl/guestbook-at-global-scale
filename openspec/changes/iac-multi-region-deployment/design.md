@@ -5,7 +5,7 @@ The Guestbook API (`src/HexMaster.Guestbook.Api`) is already built to run as an 
 - It reads its own region from `Guestbook:Region` (`ConfigurationGuestbookRegionProvider`, defaulting to `"local"`) and persists it as the Cosmos partition key (`/region`, `CosmosGuestbookEntryRepository`).
 - It uses the Aspire Cosmos component (`builder.AddAzureCosmosClient("guestbook-cosmos")`, `Program.cs`) — which authenticates with `DefaultAzureCredential` when handed an account **endpoint** rather than a key.
 - It exposes `/health` (via `MapDefaultEndpoints`) for Front Door probes and reads Front Door's `X-Azure-*` client-IP headers (`ClientIpResolver`).
-- It ships as a container via `src/HexMaster.Guestbook.Api/Dockerfile`, which needs a `MAXMIND_LICENSE_KEY` build arg to bake in the GeoIP database.
+- It ships as a container via `src/HexMaster.Guestbook.Api/Dockerfile`. The IP→location dataset is embedded in the app (`HexMaster.Guestbook/Resources/GeoIp.csv.gz`, gzip-compressed), so the build needs no license key or download step.
 
 What is missing is everything below the application: no Bicep, no `.github/workflows/`, no cloud resources. Aspire's `AppHost` (`src/Aspire/.../AppHost.cs`) exists only for local F5/dev orchestration (Cosmos emulator) — it is **not** the production deployment mechanism (ADR 0003: Aspire for local orchestration; production is IaC per `storyline/demo-app-plan.md`).
 
@@ -71,10 +71,10 @@ An `Microsoft.Cdn` (Front Door Standard) profile with a single endpoint and a si
 Ordered steps after `azure/login@v2` via OIDC federation:
 1. `az group create` (idempotent).
 2. Compute the semantic version tag (`MAJOR.MINOR.<run-number>`).
-3. `docker login` to the central ACR with the `ACR_LOGIN_*` secrets, `docker build` passing `--build-arg MAXMIND_LICENSE_KEY=…` against `src/HexMaster.Guestbook.Api/Dockerfile`, tag `global-guestbook/guestbook-api:<semver>`, push.
+3. `docker login` to the central ACR with the `ACR_LOGIN_*` secrets, `docker build` against `src/HexMaster.Guestbook.Api/Dockerfile`, tag `global-guestbook/guestbook-api:<semver>`, push.
 4. Deploy `infra/main.bicep` passing the ACR credentials + `containerImage`; `main.bicep` deploys Cosmos, per-region Container Apps (which pull with the ACR credentials), and Front Door.
 
-Triggered by `workflow_dispatch` (the primary conference-reconfig path — flip a region line, run the workflow) and by `push` to `main` under `infra/**`/`src/**`. Cloud auth comes from OIDC (`AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`); stored secrets are the ACR credentials (`ACR_LOGIN_SERVER`/`ACR_LOGIN_USERNAME`/`ACR_LOGIN_PASSWORD`) and `MAXMIND_LICENSE_KEY`. Alternative considered: a per-region job matrix — rejected because Bicep already fans out over regions, so a matrix would duplicate the source of truth.
+Triggered by `workflow_dispatch` (the primary conference-reconfig path — flip a region line, run the workflow) and by `push` to `main` under `infra/**`/`src/**`. Cloud auth comes from OIDC (`AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`); stored secrets are the ACR credentials (`ACR_LOGIN_SERVER`/`ACR_LOGIN_USERNAME`/`ACR_LOGIN_PASSWORD`). Alternative considered: a per-region job matrix — rejected because Bicep already fans out over regions, so a matrix would duplicate the source of truth.
 
 ### 8. Resource-group-scoped deployment, globally-unique names via prefix + suffix
 Everything lives in one resource group (Container Apps environments in different regions can coexist in one RG). Globally-unique names (Cosmos, Front Door endpoint) derive from a `resourcePrefix` param plus `uniqueString(resourceGroup().id)`. Per-region resource names include the region `short` code. Alternative considered: subscription-scoped deployment creating a RG per region — rejected as unnecessary complexity for a demo.
@@ -85,7 +85,7 @@ Everything lives in one resource group (Container Apps environments in different
 - **Container Apps public ingress is reachable directly, bypassing Front Door** → Mitigation noted (lock to `X-Azure-FDID`) but deferred; acceptable for a demo where the origins hold no secrets.
 - **Container App holds the ACR password as a secret** → Stored as a Container App secret and passed as a `@secure()` Bicep param (never in outputs/logs); acceptable given the org's central-registry credential model. Rotating the ACR password requires a redeploy.
 - **Region count changes Front Door origin set and Cosmos failover priorities on every run** → Idempotent; Bicep converges to the current region list. Trade-off: no gradual rollout — a run replaces the topology.
-- **MAXMIND_LICENSE_KEY exposure in build logs** → Passed as a masked GitHub secret via `--build-arg`; documented not to `echo` it. (Using BuildKit `--secret` is a stronger option but the existing Dockerfile expects an `ARG`.)
+- **Embedded GeoIp dataset adds to assembly size (~14 MB)** → The dataset is gzip-compressed (trimmed to `type,startNum,endNum,CC`, ~14 MB — well under GitHub's 100 MB file limit), compiled into the `HexMaster.Guestbook` DLL, and decompressed + parsed once at startup (~1s). Accepted trade-off for a fully self-contained image with no license key, download, or runtime file dependency.
 - **Quota/region availability** → Not all subscriptions can create Container Apps or Cosmos in all six regions (esp. West India, South Africa North). Mitigation: those three ship disabled; enabling one may require a quota request, called out in tasks.
 - **Cost of always-on multi-region infra** → Mitigation: minimal Container Apps scale (min replicas 0–1), non-zone-redundant Cosmos, Front Door Standard tier; tear down the RG after a conference.
 

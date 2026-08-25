@@ -21,10 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="TestData\GeoIP2-Country-Test.mmdb" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\HexMaster.Guestbook\HexMaster.Guestbook.csproj" />
     <ProjectReference Include="..\..\Core\HexMaster.Guestbook.Core\HexMaster.Guestbook.Core.csproj" />
     <ProjectReference Include="..\..\HexMaster.Guestbook.Abstractions\HexMaster.Guestbook.Abstractions.csproj" />
