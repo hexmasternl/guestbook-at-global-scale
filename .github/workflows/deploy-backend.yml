@@ -103,6 +103,6 @@ jobs:
               echo ""
               echo "**Front Door endpoint:** https://$fd"
               echo ""
-              echo "**Regional resource groups / origins:**"
-              echo "$outputs" | jq -r '.regionDeploymentsInfo.value[] | "- \(.region): \(.resourceGroup) → \(.fqdn)"'
+              echo "**Regional resource groups:**"
+              echo "$outputs" | jq -r '.regionResourceGroupNames.value[] | "- \(.)"'
             } >> "$GITHUB_STEP_SUMMARY"

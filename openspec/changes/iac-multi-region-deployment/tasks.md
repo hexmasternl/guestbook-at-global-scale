@@ -29,9 +29,9 @@
 ## 5. Front Door module
 
 - [x] 5.1 Create `modules/frontdoor.bicep` provisioning a Front Door (Standard) profile, one endpoint, and one origin group with a `GET /health` health probe
-- [x] 5.2 Loop origins over the enabled region FQDNs (from the region-module outputs), equal priority/weight for latency-based routing
-- [x] 5.3 Add a route mapping the endpoint to the origin group over HTTPS; output the Front Door endpoint hostname
-- [x] 5.4 Wire `frontdoor.bicep` into `main.bicep` consuming the per-region FQDN outputs
+- [x] 5.2 Create `modules/frontdoor-origin.bicep` (a single origin, equal priority/weight) and invoke it as a **resource-level module loop** in `main.bicep`, one per region, passing each region's Container App FQDN as a scalar `host` — this avoids the ARM copy-index limitation that a property-level loop over cross-resource-group module outputs hits
+- [x] 5.3 Create `modules/frontdoor-route.bicep` mapping the endpoint to the origin group over HTTPS, deployed after the origins (`dependsOn`); output the Front Door endpoint hostname
+- [x] 5.4 Wire the three Front Door modules into `main.bicep` (profile → per-region origins → route) in the central resource group
 
 ## 6. GitHub Actions deployment workflow
 

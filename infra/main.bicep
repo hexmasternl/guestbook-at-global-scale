@@ -126,7 +126,7 @@ module regionDeployments 'modules/region.bicep' = [for (r, i) in regions: {
 }]
 
 // ---------------------------------------------------------------------------
-// CENTRAL: Front Door — latency routing across all enabled regional origins.
+// CENTRAL: Front Door — profile + endpoint + origin group.
 // ---------------------------------------------------------------------------
 module frontDoor 'modules/frontdoor.bicep' = {
   scope: centralResourceGroup
@@ -134,12 +134,36 @@ module frontDoor 'modules/frontdoor.bicep' = {
   params: {
     profileName: '${resourcePrefix}-fd'
     endpointName: '${resourcePrefix}-${suffix}'
-    origins: [for (r, i) in regions: {
-      name: r.short
-      host: regionDeployments[i].outputs.fqdn
-    }]
     tags: tags
   }
+}
+
+// One Front Door origin per region. This is a RESOURCE-level module loop, so each origin
+// can take a regional Container App FQDN (a cross-resource-group deployment output) as a
+// scalar — a property-level loop over the same outputs hits an ARM copy-index limitation.
+module frontDoorOrigins 'modules/frontdoor-origin.bicep' = [for (r, i) in regions: {
+  scope: centralResourceGroup
+  name: 'frontdoor-origin-${r.short}'
+  params: {
+    profileName: frontDoor.outputs.profileName
+    originGroupName: frontDoor.outputs.originGroupName
+    originName: 'origin-${r.short}'
+    host: regionDeployments[i].outputs.fqdn
+  }
+}]
+
+// The route is created after all origins exist so the origin group is non-empty.
+module frontDoorRoute 'modules/frontdoor-route.bicep' = {
+  scope: centralResourceGroup
+  name: 'frontdoor-route'
+  params: {
+    profileName: frontDoor.outputs.profileName
+    endpointName: frontDoor.outputs.endpointName
+    originGroupName: frontDoor.outputs.originGroupName
+  }
+  dependsOn: [
+    frontDoorOrigins
+  ]
 }
 
 @description('Public Front Door hostname clients should use.')
@@ -151,9 +175,5 @@ output cosmosEndpoint string = cosmos.outputs.endpoint
 @description('Central resource group name.')
 output centralResourceGroupName string = centralResourceGroup.name
 
-@description('Per-region resource groups and Container App FQDNs (origins behind Front Door).')
-output regionDeploymentsInfo array = [for (r, i) in regions: {
-  region: r.name
-  resourceGroup: regionResourceGroups[i].name
-  fqdn: regionDeployments[i].outputs.fqdn
-}]
+@description('Per-region resource group names (each holds that region Container App).')
+output regionResourceGroupNames array = [for r in regions: '${resourcePrefix}-${r.short}-rg']

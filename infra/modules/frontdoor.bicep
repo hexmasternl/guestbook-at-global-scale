@@ -1,7 +1,8 @@
-// Azure Front Door (Standard) with one endpoint and one origin group fronting every
-// enabled regional Container App. All origins share equal priority/weight, so Front
-// Door serves the lowest-latency healthy origin (latency-based routing) and fails over
-// via /health probes.
+// Azure Front Door (Standard): the profile, one endpoint, and one origin group.
+// Origins (one per region) and the route are created by separate modules
+// (frontdoor-origin.bicep / frontdoor-route.bicep) so that origin host names can be
+// sourced from cross-resource-group region deployments via a resource-level module
+// loop (a property-level loop cannot dereference a cross-scope module loop's outputs).
 
 @description('Front Door profile name.')
 param profileName string
@@ -9,8 +10,8 @@ param profileName string
 @description('Front Door endpoint name (becomes <name>-<hash>.azurefd.net).')
 param endpointName string
 
-@description('Origins to front. Shape: [{ name, host }] where host is the Container App ingress FQDN.')
-param origins array
+@description('Origin group name.')
+param originGroupName string = 'guestbook-origins'
 
 @description('Tags applied to the Front Door profile.')
 param tags object = {}
@@ -35,7 +36,7 @@ resource endpoint 'Microsoft.Cdn/profiles/afdEndpoints@2023-05-01' = {
 
 resource originGroup 'Microsoft.Cdn/profiles/originGroups@2023-05-01' = {
   parent: profile
-  name: 'guestbook-origins'
+  name: originGroupName
   properties: {
     loadBalancingSettings: {
       sampleSize: 4
@@ -51,43 +52,7 @@ resource originGroup 'Microsoft.Cdn/profiles/originGroups@2023-05-01' = {
   }
 }
 
-resource origin 'Microsoft.Cdn/profiles/originGroups/origins@2023-05-01' = [for o in origins: {
-  parent: originGroup
-  name: 'origin-${o.name}'
-  properties: {
-    hostName: o.host
-    originHostHeader: o.host
-    httpPort: 80
-    httpsPort: 443
-    // Equal priority + weight across origins => latency-based selection among healthy origins.
-    priority: 1
-    weight: 1000
-    enabledState: 'Enabled'
-    enforceCertificateNameCheck: true
-  }
-}]
-
-resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = {
-  parent: endpoint
-  name: 'guestbook-route'
-  dependsOn: [
-    origin // ensure all origins exist before the route references the group
-  ]
-  properties: {
-    originGroup: {
-      id: originGroup.id
-    }
-    supportedProtocols: [
-      'Https'
-    ]
-    patternsToMatch: [
-      '/*'
-    ]
-    forwardingProtocol: 'HttpsOnly'
-    linkToDefaultDomain: 'Enabled'
-    httpsRedirect: 'Enabled'
-    enabledState: 'Enabled'
-  }
-}
-
+output profileName string = profile.name
+output endpointName string = endpoint.name
+output originGroupName string = originGroup.name
 output endpointHostName string = endpoint.properties.hostName
