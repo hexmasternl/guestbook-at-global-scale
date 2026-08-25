@@ -12,5 +12,7 @@ export interface GuestbookEntryDto {
   lat: number;
   lng: number;
   region: string;
+  /** Azure region of the backend instance that handled the request. */
+  handledByRegion: string;
   ts: string;
 }

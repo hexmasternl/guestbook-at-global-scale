@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -24,6 +24,12 @@ function stubGeolocation(coords: { lat: number; lng: number } | undefined): void
         },
     configurable: true,
   });
+}
+
+/** Lets the location chain (permission query → `getCurrentPosition`) settle before asserting. */
+async function settleLocation(fixture: ComponentFixture<AddGuestbookEntry>): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await fixture.whenStable();
 }
 
 describe('AddGuestbookEntry', () => {
@@ -64,7 +70,7 @@ describe('AddGuestbookEntry', () => {
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     instance['model'].set({ message: '' });
     instance['submitForm']();
@@ -79,7 +85,7 @@ describe('AddGuestbookEntry', () => {
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     expect(instance['locationStatus']()).toBe('unavailable');
 
@@ -94,14 +100,14 @@ describe('AddGuestbookEntry', () => {
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     expect(instance['locationStatus']()).toBe('unavailable');
 
     stubGeolocation({ lat: 52.3676, lng: 4.9041 });
     instance['retryLocation']();
     expect(instance['locationStatus']()).toBe('resolving');
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     expect(instance['locationStatus']()).toBe('available');
   });
@@ -111,7 +117,7 @@ describe('AddGuestbookEntry', () => {
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     const dto: GuestbookEntryDto = {
       id: 'a1',
@@ -119,6 +125,7 @@ describe('AddGuestbookEntry', () => {
       lat: 52.3676,
       lng: 4.9041,
       region: 'westeurope',
+      handledByRegion: 'westeurope',
       ts: '2026-08-24T10:00:00Z',
     };
     guestbookApiMock.createEntry.mockReturnValue(of(dto));
@@ -140,7 +147,7 @@ describe('AddGuestbookEntry', () => {
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
     fixture.detectChanges();
-    await fixture.whenStable();
+    await settleLocation(fixture);
 
     guestbookApiMock.createEntry.mockReturnValue(throwError(() => new Error('network error')));
 

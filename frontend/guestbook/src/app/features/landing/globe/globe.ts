@@ -1,5 +1,6 @@
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import * as THREE from 'three';
+import { resolveCurrentPosition } from '../geolocation';
 
 type GlobeStatus = 'idle' | 'locating' | 'rotating' | 'located' | 'unavailable';
 
@@ -222,22 +223,18 @@ export class Globe {
     this.renderer.render(this.scene, this.camera);
   };
 
-  /** Test-only helper: forces the globe to the given coordinates via the same eased-rotation flow as a real geolocation resolve. */
-  setLocationForTesting(latitude: number, longitude: number): void {
-    this.onLocationResolved(latitude, longitude);
-  }
-
   private requestUserLocation(): void {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      this.status.set('unavailable');
-      return;
-    }
+    // Stays 'locating' — and so keeps idle-rotating — for however long the
+    // browser's permission prompt is on screen, which can be many seconds on a
+    // first visit. The promise settles once the visitor decides.
     this.status.set('locating');
-    navigator.geolocation.getCurrentPosition(
-      (position) => this.onLocationResolved(position.coords.latitude, position.coords.longitude),
-      () => this.status.set('unavailable'),
-      { timeout: 8000, maximumAge: 300_000 },
-    );
+    resolveCurrentPosition().then((position) => {
+      if (!position) {
+        this.status.set('unavailable');
+        return;
+      }
+      this.onLocationResolved(position.lat, position.lng);
+    });
   }
 
   private onLocationResolved(latitude: number, longitude: number): void {

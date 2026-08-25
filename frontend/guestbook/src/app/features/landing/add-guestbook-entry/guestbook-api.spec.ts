@@ -29,6 +29,7 @@ describe('GuestbookApi', () => {
       lat: request.lat,
       lng: request.lng,
       region: 'westeurope',
+      handledByRegion: 'westeurope',
       ts: '2026-08-24T10:00:00Z',
     };
 

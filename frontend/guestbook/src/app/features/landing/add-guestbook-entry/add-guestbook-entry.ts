@@ -8,7 +8,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ResolvedPosition, resolveCurrentPosition } from './geolocation';
+import { ResolvedPosition, resolveCurrentPosition } from '../geolocation';
 import { GuestbookApi } from './guestbook-api';
 import { GuestbookEntryDto } from './guestbook-entry.models';
 
