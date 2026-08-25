@@ -1,6 +1,9 @@
 <div class="guestbook-list">
   <header class="guestbook-list__header">
-    <a class="guestbook-list__back" mat-button routerLink="/">
+    <!-- A plain anchor, not mat-button: the theme's primary colour only reaches ~2.8:1
+         against this background, and Material's label colour lives behind custom
+         properties that emulated encapsulation cannot reliably override. -->
+    <a class="guestbook-list__back" routerLink="/">
       <span aria-hidden="true">←</span>
       Back to the landing page
     </a>
@@ -66,9 +69,10 @@
   </section>
 
   <nav class="guestbook-list__pagination" aria-label="Guestbook pagination">
+    <!-- Plain buttons rather than mat-stroked-button, for the same contrast reason as the
+         back link above: the theme's label colour does not reach AA on this background. -->
     <button
       class="guestbook-list__page-button"
-      mat-stroked-button
       type="button"
       [disabled]="!canGoPrevious()"
       (click)="previousPage()"
@@ -82,7 +86,6 @@
 
     <button
       class="guestbook-list__page-button"
-      mat-stroked-button
       type="button"
       [disabled]="!canGoNext()"
       (click)="nextPage()"

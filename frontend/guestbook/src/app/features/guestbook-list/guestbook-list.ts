@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, inject, signal, viewChild } from '@ang
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
+import { timeout } from 'rxjs';
 import { GuestbookApi } from '../../core/guestbook/guestbook-api';
 import { GuestbookEntryDto } from '../../core/guestbook/guestbook-entry.models';
 import { GuestbookEntryCard } from './guestbook-entry-card/guestbook-entry-card';
@@ -19,6 +20,15 @@ const GENERIC_ERROR_MESSAGE =
  * Must stay within the API's accepted 10–250 range, or it is clamped server-side.
  */
 const PAGE_SIZE = 12;
+
+/**
+ * Deadline for a page request. Without one, an unreachable region does not fail — the
+ * request simply hangs, and the page spins indefinitely instead of reaching the error
+ * state. Observed directly: with the API stopped mid-session the request was still
+ * pending after nine seconds. A visible "something went wrong, try again" is a far better
+ * outcome than an eternal spinner, especially when a region is pulled during a live demo.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * The `/list` page: persisted guestbook entries, newest first, one page at a time.
@@ -123,21 +133,24 @@ export class GuestbookList {
     this.status.set('loading');
     this.errorMessage.set(undefined);
 
-    this.guestbookApi.listEntries({ pageSize: PAGE_SIZE, continuationToken }).subscribe({
-      next: (response) => {
-        this.entries.set(response.entries ?? []);
-        this.nextToken.set(response.continuationToken ?? null);
-        this.renderedAt.set(new Date());
-        this.status.set('ready');
-        this.focusHeading();
-      },
-      error: () => {
-        // Entries from the previous page are deliberately left in place: a failed
-        // next-page request should not wipe out what the visitor is already reading.
-        this.errorMessage.set(GENERIC_ERROR_MESSAGE);
-        this.status.set('error');
-      },
-    });
+    this.guestbookApi
+      .listEntries({ pageSize: PAGE_SIZE, continuationToken })
+      .pipe(timeout(REQUEST_TIMEOUT_MS))
+      .subscribe({
+        next: (response) => {
+          this.entries.set(response.entries ?? []);
+          this.nextToken.set(response.continuationToken ?? null);
+          this.renderedAt.set(new Date());
+          this.status.set('ready');
+          this.focusHeading();
+        },
+        error: () => {
+          // Entries from the previous page are deliberately left in place: a failed
+          // next-page request should not wipe out what the visitor is already reading.
+          this.errorMessage.set(GENERIC_ERROR_MESSAGE);
+          this.status.set('error');
+        },
+      });
   }
 
   /**

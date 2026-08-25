@@ -154,6 +154,11 @@ The guestbook list page SHALL distinguish between a request in progress, a succe
 - **THEN** the page displays an inline error message
 - **AND** the page offers a retry control that re-requests the same page without requiring the visitor to reload or re-navigate
 
+#### Scenario: Request never completes
+
+- **WHEN** a request for entries neither succeeds nor fails within a bounded period (for example, the region serving it has become unreachable and the connection hangs)
+- **THEN** the page abandons the request and enters its error state with the retry control, rather than remaining in the loading state indefinitely
+
 #### Scenario: A failed page request preserves the entries already shown
 
 - **WHEN** a request for a subsequent page fails while entries from a previous page are displayed
