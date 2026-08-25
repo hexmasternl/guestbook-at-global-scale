@@ -1,4 +1,3 @@
-tust weigharen vanavond vanavond lekker pizza eten what will u voor pizzanatures komen is halfpakken afspraak niemand ik zei op de trap maakt me niet uit jamis herom schop je ga je toen niet schoppen nee to gek ok that sort rare dingen doen
 //  Guestbook — multi-region backend (Container Apps + Cosmos DB + Front Door)
 // ============================================================================
 //
