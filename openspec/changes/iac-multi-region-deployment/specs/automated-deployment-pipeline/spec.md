@@ -16,12 +16,12 @@ The deployment pipeline SHALL build the Guestbook API image from `src/HexMaster.
 
 ### Requirement: Deploy infrastructure via OIDC-authenticated Bicep deployment
 
-The deployment pipeline SHALL authenticate to Azure using OIDC workload-identity federation (no stored cloud credential secrets) and deploy the Bicep templates — the full topology (Cosmos DB, per-region Container Apps, Front Door, and the Cosmos data-plane role assignment) with the pushed image reference and the central-registry credentials. Region selection SHALL be controlled entirely by the Bicep region list, requiring no per-region edits in the workflow.
+The deployment pipeline SHALL authenticate to Azure using OIDC workload-identity federation (no stored cloud credential secrets) and run a single **subscription-scoped** Bicep deployment that creates the resource groups and the full topology (central Cosmos DB + Front Door + managed identity, and per-region Container Apps) with the pushed image reference and the central-registry credentials. It SHALL NOT pre-create resource groups outside the template. Region selection SHALL be controlled entirely by the Bicep region list, requiring no per-region edits in the workflow.
 
-#### Scenario: End-to-end deploy from a clean resource group
+#### Scenario: End-to-end deploy from a clean subscription
 
-- **WHEN** the pipeline runs against an empty resource group
-- **THEN** it logs in via OIDC, pushes the image to the central registry, and deploys Cosmos DB, the enabled-region Container Apps, and Front Door in one run
+- **WHEN** the pipeline runs against a subscription with no pre-created resource groups
+- **THEN** it logs in via OIDC, pushes the image to the central registry, and runs one subscription-scoped deployment that creates the central and per-region resource groups and deploys Cosmos DB, the enabled-region Container Apps, and Front Door
 
 #### Scenario: Reconfigure regions without touching the workflow
 

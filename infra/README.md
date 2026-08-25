@@ -7,11 +7,19 @@ regions, fronted by [Azure Front Door](https://learn.microsoft.com/azure/frontdo
 [Cosmos DB](https://learn.microsoft.com/azure/cosmos-db/) account.
 
 ```
-Client → Front Door (latency routing, /health probes)
-             ├─→ Container App (region A) ─┐
-             ├─→ Container App (region B) ─┼─→ Cosmos DB (multi-region writes, Session)
-             └─→ Container App (region C) ─┘
+                 central-rg
+Client → Front Door (latency routing, /health probes) ── Cosmos DB (multi-region writes, Session)
+             ├─→ Container App  [<prefix>-auc-rg, Australia Central] ─┐
+             ├─→ Container App  [<prefix>-wus-rg, West US]           ─┼─→ Cosmos DB
+             └─→ Container App  [<prefix>-weu-rg, West Europe]       ─┘
 ```
+
+**Deployment is subscription-scoped and creates the resource groups itself:**
+
+- a dedicated **central resource group** (`<prefix>-central-rg`) holds Front Door, the
+  shared Cosmos DB account, and the shared managed identity;
+- **one resource group per enabled region** (`<prefix>-<short>-rg`, created in that
+  region) holds that region's Container Apps environment + Container App.
 
 The container image is pulled from an **existing central Azure Container Registry** (not
 provisioned here) using registry credentials stored in GitHub Secrets.
@@ -76,8 +84,9 @@ the run summary.
 ### One-time setup
 
 1. **App registration + OIDC federation** — create an Entra app registration, add a GitHub
-   federated credential for this repo, and grant it **Contributor** on the target
-   subscription (or resource group `guestbook-rg`). Contributor can create the Cosmos DB
+   federated credential for this repo, and grant it **Contributor at the subscription
+   scope** (the deployment is subscription-scoped and creates the resource groups itself,
+   which requires subscription-level rights). Contributor can create the Cosmos DB
    data-plane role assignment; no Azure RBAC role assignments are created by this
    deployment, so `User Access Administrator` is not required.
 2. **GitHub secrets** (repo → Settings → Secrets and variables → Actions):
@@ -91,21 +100,22 @@ the run summary.
    | `ACR_LOGIN_USERNAME` | Central ACR username (used to push and pull) |
    | `ACR_LOGIN_PASSWORD` | Central ACR password |
 
-3. Adjust `RESOURCE_GROUP` / `LOCATION` / `RESOURCE_PREFIX` / `VERSION_MAJOR_MINOR` in the
-   workflow `env:` if desired.
+3. Adjust `LOCATION` / `RESOURCE_PREFIX` / `VERSION_MAJOR_MINOR` in the workflow `env:` if
+   desired. `LOCATION` is both the subscription-deployment metadata location and the
+   central resource group's location; per-region resource groups are created in their
+   respective regions.
 
 ### Manual / local deploy
 
 ```bash
-az group create -n guestbook-rg -l westeurope
 # Build + push the image to the central ACR (from repo root):
 echo "$ACR_LOGIN_PASSWORD" | docker login "$ACR_LOGIN_SERVER" -u "$ACR_LOGIN_USERNAME" --password-stdin
 docker build \
   -f src/HexMaster.Guestbook.Api/Dockerfile \
   -t "$ACR_LOGIN_SERVER/global-guestbook/guestbook-api:1.0.0" .
 docker push "$ACR_LOGIN_SERVER/global-guestbook/guestbook-api:1.0.0"
-# Deploy:
-az deployment group create -g guestbook-rg -f infra/main.bicep \
+# Deploy (subscription-scoped; the template creates all resource groups):
+az deployment sub create --location westeurope -f infra/main.bicep \
   -p registryLoginServer="$ACR_LOGIN_SERVER" registryUsername="$ACR_LOGIN_USERNAME" \
      registryPassword="$ACR_LOGIN_PASSWORD" \
      containerImage="$ACR_LOGIN_SERVER/global-guestbook/guestbook-api:1.0.0"

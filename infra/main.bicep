@@ -5,8 +5,8 @@
 //  SINGLE SOURCE OF TRUTH FOR REGIONS  👇
 //
 //  To enable/disable a region for a conference, comment or uncomment its ONE line
-//  below. That single edit adds/removes the region's Container App, its Cosmos DB
-//  write location, AND its Front Door origin — everywhere at once.
+//  below. That single edit adds/removes the region's resource group + Container App,
+//  its Cosmos DB write location, AND its Front Door origin — everywhere at once.
 //
 //  The FIRST uncommented region is the Cosmos DB primary write region.
 //  At least one region must stay uncommented — @minLength(1) fails the deployment
@@ -23,7 +23,10 @@ param regions array = [
 ]
 // ============================================================================
 
-targetScope = 'resourceGroup'
+// Subscription-scoped: this deployment creates the resource groups itself.
+//  - one CENTRAL resource group  → Front Door + the shared Cosmos DB + managed identity
+//  - one resource group PER REGION (in that region) → that region's Container App
+targetScope = 'subscription'
 
 @description('Short prefix for resource names (lowercase letters/digits).')
 @minLength(3)
@@ -43,8 +46,8 @@ param registryUsername string
 @secure()
 param registryPassword string
 
-@description('Location for global/primary resources. Defaults to the resource group location.')
-param location string = resourceGroup().location
+@description('Location for the central resource group (Front Door / Cosmos / identity).')
+param centralLocation string = 'westeurope'
 
 @description('Tags applied to all resources.')
 param tags object = {
@@ -53,26 +56,45 @@ param tags object = {
 }
 
 // Short, deterministic suffix for globally-unique names (Cosmos/Front Door).
-var suffix = uniqueString(resourceGroup().id)
+var suffix = uniqueString(subscription().id, resourcePrefix)
+
+var centralResourceGroupName = '${resourcePrefix}-central-rg'
 
 // ---------------------------------------------------------------------------
-// Shared user-assigned managed identity (Cosmos data-plane auth).
+// Resource groups (created by this subscription-scoped deployment).
+// ---------------------------------------------------------------------------
+resource centralResourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
+  name: centralResourceGroupName
+  location: centralLocation
+  tags: tags
+}
+
+resource regionResourceGroups 'Microsoft.Resources/resourceGroups@2024-07-01' = [for r in regions: {
+  name: '${resourcePrefix}-${r.short}-rg'
+  location: r.name
+  tags: tags
+}]
+
+// ---------------------------------------------------------------------------
+// CENTRAL: shared user-assigned managed identity (Cosmos data-plane auth).
 // The container image is pulled from the central ACR with registry credentials
 // (below), not this identity — so no AcrPull role assignment is needed.
 // ---------------------------------------------------------------------------
 module identity 'modules/identity.bicep' = {
+  scope: centralResourceGroup
   name: 'identity'
   params: {
-    location: location
+    location: centralLocation
     identityName: '${resourcePrefix}-id'
     tags: tags
   }
 }
 
 // ---------------------------------------------------------------------------
-// Cosmos DB — multi-region writes, Session consistency, keyless access.
+// CENTRAL: Cosmos DB — multi-region writes, Session consistency, keyless access.
 // ---------------------------------------------------------------------------
 module cosmos 'modules/cosmos.bicep' = {
+  scope: centralResourceGroup
   name: 'cosmos'
   params: {
     accountName: toLower('${resourcePrefix}-cosmos-${suffix}')
@@ -83,9 +105,10 @@ module cosmos 'modules/cosmos.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
-// One Container Apps environment + app per enabled region.
+// PER REGION: one resource group (above) with a Container Apps environment + app.
 // ---------------------------------------------------------------------------
-module regionDeployments 'modules/region.bicep' = [for r in regions: {
+module regionDeployments 'modules/region.bicep' = [for (r, i) in regions: {
+  scope: regionResourceGroups[i]
   name: 'region-${r.short}'
   params: {
     regionName: r.name
@@ -103,9 +126,10 @@ module regionDeployments 'modules/region.bicep' = [for r in regions: {
 }]
 
 // ---------------------------------------------------------------------------
-// Front Door — latency routing across all enabled regional origins.
+// CENTRAL: Front Door — latency routing across all enabled regional origins.
 // ---------------------------------------------------------------------------
 module frontDoor 'modules/frontdoor.bicep' = {
+  scope: centralResourceGroup
   name: 'frontdoor'
   params: {
     profileName: '${resourcePrefix}-fd'
@@ -124,8 +148,12 @@ output frontDoorHostName string = frontDoor.outputs.endpointHostName
 @description('Cosmos DB account endpoint.')
 output cosmosEndpoint string = cosmos.outputs.endpoint
 
-@description('Per-region Container App FQDNs (origins behind Front Door).')
-output regionFqdns array = [for (r, i) in regions: {
+@description('Central resource group name.')
+output centralResourceGroupName string = centralResourceGroup.name
+
+@description('Per-region resource groups and Container App FQDNs (origins behind Front Door).')
+output regionDeploymentsInfo array = [for (r, i) in regions: {
   region: r.name
+  resourceGroup: regionResourceGroups[i].name
   fqdn: regionDeployments[i].outputs.fqdn
 }]

@@ -2,7 +2,7 @@
 
 - [x] 1.1 Create the `infra/` folder with `main.bicep`, `main.bicepparam`, and a `modules/` subfolder
 - [x] 1.2 In `main.bicep`, define the single source-of-truth `regions` array — one `{ name, short }` object per line — with Australia Central, West US, West Europe uncommented and East US, South Africa North, West India present but commented (`//`)
-- [x] 1.3 Add params: `resourcePrefix`, `containerImage`, and derive globally-unique names via `uniqueString(resourceGroup().id)`; add an `assert`/`if`-guard that fails when `regions` is empty
+- [x] 1.3 `targetScope = 'subscription'`; add params `resourcePrefix`/`containerImage`/`centralLocation`; create a central RG (`<prefix>-central-rg`) and one RG per region (`<prefix>-<short>-rg`, in-region); derive globally-unique names via `uniqueString(subscription().id, resourcePrefix)`; `@minLength(1)` guard on `regions`
 - [x] 1.4 Add a short `infra/README.md` documenting the one-line region toggle and required GitHub secrets
 
 ## 2. Container registry (existing central ACR — not provisioned)
@@ -36,10 +36,10 @@
 ## 6. GitHub Actions deployment workflow
 
 - [x] 6.1 Create `.github/workflows/deploy-backend.yml` with `workflow_dispatch` and `push` (paths `infra/**`, `src/**`) triggers and `id-token: write` permission
-- [x] 6.2 Add `azure/login@v2` OIDC step using `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` secrets; `az group create` (idempotent)
+- [x] 6.2 Add `azure/login@v2` OIDC step using `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` secrets (no `az group create` — the template creates the resource groups)
 - [x] 6.3 Compute a semantic-version tag (`MAJOR.MINOR.<run-number>`) inside the workflow
 - [x] 6.4 `docker login` to the central ACR with `ACR_LOGIN_*` secrets, then `docker build` against `src/HexMaster.Guestbook.Api/Dockerfile`, tag `global-guestbook/guestbook-api:<semver>`, and push
-- [x] 6.5 Deploy `main.bicep` passing `registryLoginServer`/`registryUsername`/`registryPassword` + `containerImage`; output the Front Door hostname to the job summary
+- [x] 6.5 `az deployment sub create --location <loc>` on `main.bicep` passing `resourcePrefix`/`centralLocation`/`registryLoginServer`/`registryUsername`/`registryPassword`/`containerImage`; output the central RG, per-region RGs, and Front Door hostname to the job summary
 
 ## 6b. Container hardening & naming (C# project)
 
@@ -54,7 +54,7 @@
 ## 7. Validation & verification
 
 - [x] 7.1 `az bicep build`/`bicep lint` on all templates with no errors (✓ all green); `az deployment group what-if` for a dry run — _pending: needs a live subscription_
-- [ ] 7.2 Run the workflow end-to-end against the target subscription and confirm three Container Apps, a 3-write-region Cosmos account, and one Front Door endpoint exist
+- [ ] 7.2 Run the workflow end-to-end against the target subscription and confirm the central RG (Front Door + 3-write-region Cosmos + identity) and three per-region RGs (each with a Container App) are created
 - [ ] 7.3 Verify `GET https://<frontdoor-endpoint>/health` returns healthy and a `POST /greet` write succeeds and reads back via `GET /greetings`
 - [ ] 7.4 Toggle one region line (e.g. enable East US), re-run the workflow, and confirm the region is added to Container Apps, Cosmos write locations, and Front Door origins
 - [x] 7.5 Document the one-time OIDC app-registration + secret setup and any region quota caveats (West India, South Africa North, East US) in `infra/README.md`
