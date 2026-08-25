@@ -15,7 +15,6 @@
 param regions array = [
   //{ name: 'australiacentral', short: 'auc' } // Australia Central
   { name: 'westus', short: 'wus' } // West US
-  //{ name: 'northeurope', short: 'neu' } // West Europe
   { name: 'swedencentral', short: 'swc' } // West Europe
   //{ name: 'westeurope', short: 'weu' } // West Europe
   // { name: 'eastus',           short: 'eus' } // East US
