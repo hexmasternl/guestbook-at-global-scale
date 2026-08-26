@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** Sharing browser location is now
+> optional: the form no longer blocks submission when geolocation is denied, unavailable, or
+> still pending — it submits without coordinates and lets the API approximate the location
+> from the client IP (or record it as unknown). Everything else here still holds.
+
 ## 1. Backend: CORS for local dev
 
 - [x] 1.1 Add a `Cors:AllowedOrigins` configuration section (e.g. `appsettings.Development.json`) defaulting to the Angular dev-server origin (`http://localhost:4200`).

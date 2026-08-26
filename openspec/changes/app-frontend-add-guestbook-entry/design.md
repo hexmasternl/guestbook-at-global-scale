@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** Sharing browser location is now
+> optional: the form no longer blocks submission when geolocation is denied, unavailable, or
+> still pending — it submits without coordinates and lets the API approximate the location
+> from the client IP (or record it as unknown). Everything else here still holds.
+
 ## Context
 
 The `frontend/guestbook/` Angular app (v22, zoneless, signals-first, standalone components — see `AGENTS.md`/`CLAUDE.md`) currently has a single `Landing` feature route. Its "Sign the guestbook" CTA is a dead anchor (`href="#coming-soon"`). The backend (`HexMaster.Guestbook.Api`) already implements `POST /greet`:

@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** Sharing browser location is now
+> optional: the form no longer blocks submission when geolocation is denied, unavailable, or
+> still pending — it submits without coordinates and lets the API approximate the location
+> from the client IP (or record it as unknown). Everything else here still holds.
+
 ## ADDED Requirements
 
 ### Requirement: Sign the guestbook opens a modal entry form

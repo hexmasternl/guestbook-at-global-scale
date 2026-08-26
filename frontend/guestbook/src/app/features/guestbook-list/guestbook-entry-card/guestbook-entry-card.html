@@ -4,11 +4,15 @@
   <footer class="entry-card__meta">
     <p class="entry-card__location">
       <span class="entry-card__pin" aria-hidden="true">📍</span>
-      @if (approximateCountry()) {
-        <span class="entry-card__place">{{ approximateCountry() }}</span>
-        <span class="entry-card__qualifier">approx.</span>
+      @if (hasLocation()) {
+        @if (approximateCountry()) {
+          <span class="entry-card__place">{{ approximateCountry() }}</span>
+          <span class="entry-card__qualifier">approx.</span>
+        }
+        <span class="entry-card__coords">{{ coordinates() }}</span>
+      } @else {
+        <span class="entry-card__unknown">Location unknown</span>
       }
-      <span class="entry-card__coords">{{ coordinates() }}</span>
     </p>
 
     <div class="entry-card__meta-row">

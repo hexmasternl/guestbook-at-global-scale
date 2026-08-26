@@ -26,6 +26,14 @@ function stubGeolocation(coords: { lat: number; lng: number } | undefined): void
   });
 }
 
+/** Stubs `navigator.geolocation` so a position request never settles — the "still resolving" state. */
+function stubPendingGeolocation(): void {
+  Object.defineProperty(navigator, 'geolocation', {
+    value: { getCurrentPosition: () => undefined },
+    configurable: true,
+  });
+}
+
 /** Lets the location chain (permission query → `getCurrentPosition`) settle before asserting. */
 async function settleLocation(fixture: ComponentFixture<AddGuestbookEntry>): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -80,7 +88,10 @@ describe('AddGuestbookEntry', () => {
     expect(instance['entryForm'].message().invalid()).toBe(true);
   });
 
-  it('blocks submission when location is unavailable', async () => {
+  // Sharing GPS coordinates is optional: a denied or unsupported geolocation must still let
+  // a greeting through without coordinates, so the API can fall back to the client's IP
+  // address (and to an unknown location after that).
+  it('submits without coordinates when location access is denied', async () => {
     stubGeolocation(undefined);
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;
@@ -89,13 +100,35 @@ describe('AddGuestbookEntry', () => {
 
     expect(instance['locationStatus']()).toBe('unavailable');
 
+    const dto = { id: 'a1' } as GuestbookEntryDto;
+    guestbookApiMock.createEntry.mockReturnValue(of(dto));
+
     instance['model'].set({ message: 'hi from nowhere' });
     instance['submitForm']();
 
-    expect(guestbookApiMock.createEntry).not.toHaveBeenCalled();
+    expect(guestbookApiMock.createEntry).toHaveBeenCalledWith({ message: 'hi from nowhere' });
+    expect(instance['status']()).toBe('success');
+    expect(dialogRefMock.close).toHaveBeenCalledWith(dto);
   });
 
-  it('re-resolves location when retrying after it was unavailable', async () => {
+  it('submits without coordinates while location is still being resolved', async () => {
+    stubPendingGeolocation();
+    const fixture = TestBed.createComponent(AddGuestbookEntry);
+    const instance = fixture.componentInstance;
+    fixture.detectChanges();
+    await settleLocation(fixture);
+
+    expect(instance['locationStatus']()).toBe('resolving');
+
+    guestbookApiMock.createEntry.mockReturnValue(of({ id: 'a1' } as GuestbookEntryDto));
+
+    instance['model'].set({ message: 'hi, still locating' });
+    instance['submitForm']();
+
+    expect(guestbookApiMock.createEntry).toHaveBeenCalledWith({ message: 'hi, still locating' });
+  });
+
+  it('re-resolves location when the visitor asks to use it after it was unavailable', async () => {
     stubGeolocation(undefined);
     const fixture = TestBed.createComponent(AddGuestbookEntry);
     const instance = fixture.componentInstance;

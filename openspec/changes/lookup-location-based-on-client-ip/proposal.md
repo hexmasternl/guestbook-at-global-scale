@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** The `(0, 0)` sentinel this
+> change chose for an unresolvable location has been replaced by nullable `lat`/`lng` —
+> both `null` means "unknown" — end to end (domain, Cosmos document, and both API
+> responses). Everything else here still holds.
+
 ## Why
 
 `POST /greet` currently requires the client to supply `lat`/`lng`, and the frontend only *best-effort* prefills those from `navigator.geolocation` (a visitor can deny the browser permission, be on a device without it, or the frontend could otherwise fail to obtain coordinates). When that happens today, there is no way to submit a valid greeting at all, or a client would have to send a fabricated `(0,0)`-style value that isn't actually "unknown." The API should be able to approximate a visitor's location server-side, from their IP address, whenever the client doesn't supply exact coordinates — keeping the "say hi from —" map experience working for everyone.

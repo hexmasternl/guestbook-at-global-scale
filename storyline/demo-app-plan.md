@@ -79,6 +79,9 @@ One static HTML/JS page (or a small React app): a map (Leaflet, or plain SVG dot
 }
 ```
 
+- `lat`/`lng` are nullable: a visitor may decline to share their location, and the server's
+  IP-based approximation can come up empty. Both `null` means "location unknown" — no
+  substitute coordinate is invented (see `src/HexMaster.Guestbook.Api/README.md`).
 - Consistency level: **session** as the default — easy to explain, and a good excuse to mention it's a dial, not a fixed setting.
 - Conflict resolution: last-writer-wins on `ts` by default. For a stronger "aha" moment, swap in a **custom conflict resolution procedure** — e.g. merge instead of overwrite when two greetings collide at the same instant from different regions.
 

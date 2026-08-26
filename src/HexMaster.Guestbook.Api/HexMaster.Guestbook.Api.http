@@ -1,6 +1,36 @@
 @HexMaster.Guestbook.Api_HostAddress = http://localhost:5046
 
-GET {{HexMaster.Guestbook.Api_HostAddress}}/weatherforecast/
+### Sign the guestbook with coordinates the client shared (visitor granted location access).
+POST {{HexMaster.Guestbook.Api_HostAddress}}/greet
+Content-Type: application/json
+
+{
+  "message": "Hi from Amsterdam!",
+  "lat": 52.3676,
+  "lng": 4.9041
+}
+
+### Sign the guestbook without coordinates — the server approximates the location from the
+### client IP address, and stores it as unknown (lat/lng null) when that resolves to nothing.
+### Expect null coordinates in the response when calling from loopback or a private IP.
+POST {{HexMaster.Guestbook.Api_HostAddress}}/greet
+Content-Type: application/json
+
+{
+  "message": "Hi from somewhere!"
+}
+
+### Coordinates must be sent together — this returns 400 ValidationProblem.
+POST {{HexMaster.Guestbook.Api_HostAddress}}/greet
+Content-Type: application/json
+
+{
+  "message": "Half a location",
+  "lat": 52.3676
+}
+
+### List the newest greetings. Entries with an unknown location come back with lat/lng null.
+GET {{HexMaster.Guestbook.Api_HostAddress}}/greetings?pageSize=10
 Accept: application/json
 
 ###

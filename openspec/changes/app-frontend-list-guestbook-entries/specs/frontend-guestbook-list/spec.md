@@ -1,3 +1,7 @@
+> **Partly superseded by `optional-client-gps-location`.** An entry can now come back with
+> `lat`/`lng` as `null` — an unknown location — and is rendered as such instead of showing a
+> derived country and coordinates. Everything else here still holds.
+
 ## ADDED Requirements
 
 ### Requirement: Guestbook list is reachable at the /list route

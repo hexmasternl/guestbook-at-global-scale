@@ -22,10 +22,10 @@ describe('resolveApproximateCountry', () => {
     expect(result).not.toBe('');
   });
 
-  it('resolves the (0, 0) sentinel to a name rather than failing', () => {
-    // The API falls back to (0, 0) when it cannot resolve a location at all. The point
-    // is in the Gulf of Guinea; any nearby West African country is a defensible answer,
-    // so this asserts only that something sensible comes back.
+  it('resolves an exact (0, 0) coordinate to a name rather than failing', () => {
+    // (0, 0) is a genuine coordinate in the Gulf of Guinea, not an "unknown" marker — the
+    // API sends null coordinates for that. Any nearby West African country is a defensible
+    // answer here, so this asserts only that something sensible comes back.
     const result = resolveApproximateCountry(0, 0);
     expect(result).toBeTypeOf('string');
     expect(result).not.toBe('');
@@ -64,6 +64,13 @@ describe('resolveApproximateCountry', () => {
     expect(resolveApproximateCountry(91, 0)).toBeUndefined();
     expect(resolveApproximateCountry(0, -181)).toBeUndefined();
   });
+
+  it('returns undefined when the entry has no location', () => {
+    // The API sends null coordinates for an entry whose origin is unknown.
+    expect(resolveApproximateCountry(null, null)).toBeUndefined();
+    expect(resolveApproximateCountry(undefined, undefined)).toBeUndefined();
+    expect(resolveApproximateCountry(52.4, null)).toBeUndefined();
+  });
 });
 
 describe('formatCoordinates', () => {
@@ -86,5 +93,10 @@ describe('formatCoordinates', () => {
 
   it('returns an empty string for non-finite coordinates', () => {
     expect(formatCoordinates(Number.NaN, 0)).toBe('');
+  });
+
+  it('returns an empty string when the entry has no location', () => {
+    expect(formatCoordinates(null, null)).toBe('');
+    expect(formatCoordinates(undefined, undefined)).toBe('');
   });
 });

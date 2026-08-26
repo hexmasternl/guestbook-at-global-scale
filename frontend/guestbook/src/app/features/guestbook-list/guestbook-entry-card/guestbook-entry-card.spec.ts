@@ -84,4 +84,12 @@ describe('GuestbookEntryCard', () => {
     expect(time?.getAttribute('datetime')).toBe('2026-08-25T10:00:00Z');
     expect(time?.textContent).toContain('2 hours');
   });
+
+  it('says the location is unknown when the entry carries no coordinates', async () => {
+    const { el } = await render(entry({ lat: null, lng: null }));
+
+    expect(el.querySelector('.entry-card__unknown')?.textContent).toContain('Location unknown');
+    expect(el.querySelector('.entry-card__place')).toBeNull();
+    expect(el.querySelector('.entry-card__coords')).toBeNull();
+  });
 });

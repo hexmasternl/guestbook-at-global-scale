@@ -12,8 +12,11 @@ import { formatRelativeTime } from '../relative-time';
  * The location shown is an approximation derived in the browser from the entry's
  * coordinates (there is no place name in the API payload), so the card deliberately
  * shows the country **and** the coordinates it was derived from, and labels the country
- * as approximate. The region badge shows `handledByRegion` — the backend instance that
- * served the create request — not `region`, which is the Cosmos storage partition.
+ * as approximate. An entry can also have no location at all — sharing browser location
+ * is optional and the API's IP-based fallback can come up empty — in which case the card
+ * says so plainly instead of inventing coordinates. The region badge shows
+ * `handledByRegion` — the backend instance that served the create request — not `region`,
+ * which is the Cosmos storage partition.
  */
 @Component({
   selector: 'gkb-guestbook-entry-card',
@@ -29,6 +32,12 @@ export class GuestbookEntryCard {
    * cards, and so tests can pin it.
    */
   readonly now = input<Date>(new Date());
+
+  /** `false` when the entry carries no coordinates — its origin is unknown. */
+  protected readonly hasLocation = computed(() => {
+    const { lat, lng } = this.entry();
+    return lat !== null && lat !== undefined && lng !== null && lng !== undefined;
+  });
 
   protected readonly approximateCountry = computed(() =>
     resolveApproximateCountry(this.entry().lat, this.entry().lng),

@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** The `(0, 0)` sentinel this
+> change chose for an unresolvable location has been replaced by nullable `lat`/`lng` —
+> both `null` means "unknown" — end to end (domain, Cosmos document, and both API
+> responses). Everything else here still holds.
+
 ## 1. Abstractions & command shape
 
 - [x] 1.1 Change `CreateGuestbookEntryRequest` (`HexMaster.Guestbook.Abstractions/DataTransferObjects`) to `sealed record CreateGuestbookEntryRequest(string Message, double? Lat, double? Lng)`.

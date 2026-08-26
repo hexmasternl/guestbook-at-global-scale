@@ -47,6 +47,14 @@ describe('GuestbookApi', () => {
 
       expect(result).toEqual(response);
     });
+
+    it('POSTs a message-only body when the visitor shared no coordinates', () => {
+      api.createEntry({ message: 'hi from somewhere' }).subscribe();
+
+      const req = httpMock.expectOne(`${environment.apiBaseUrl}/greet`);
+      expect(req.request.body).toEqual({ message: 'hi from somewhere' });
+      req.flush(entry({ lat: null, lng: null }));
+    });
   });
 
   describe('listEntries', () => {

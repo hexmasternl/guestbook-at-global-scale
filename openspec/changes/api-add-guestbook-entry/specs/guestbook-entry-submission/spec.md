@@ -1,3 +1,8 @@
+> **Superseded by `lookup-location-based-on-client-ip` and then `optional-client-gps-location`.**
+> `lat`/`lng` are optional on the request (the server falls back to an IP-based
+> approximation) and nullable on the response (both `null` means the location is unknown).
+> The rest of this requirement still holds.
+
 ## ADDED Requirements
 
 ### Requirement: Submit a guestbook greeting via POST /greet

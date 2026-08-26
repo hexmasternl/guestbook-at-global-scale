@@ -7,22 +7,29 @@ import { COUNTRIES, CountryRow } from './countries.data';
  *  1. Narrow to countries whose bounding box contains the point, then take the nearest
  *     centroid among those. The box filter is what keeps a point in northern Norway from
  *     resolving to Sweden just because Sweden's centroid happens to be closer.
- *  2. If no box contains the point — mid-ocean coordinates, the `(0, 0)` sentinel the API
- *     falls back to when it cannot resolve a location — take the nearest centroid overall,
- *     so there is always a best guess rather than a blank.
+ *  2. If no box contains the point — mid-ocean coordinates, for instance — take the
+ *     nearest centroid overall, so there is always a best guess rather than a blank.
  *
  * Distance is squared degrees, not great-circle: it is monotonic with real distance for
  * the comparison being made here, and this runs once per rendered entry.
  *
- * Returns `undefined` only for coordinates that are not finite or out of range. Callers
- * must treat the result as a display aid and keep the real coordinates visible — see the
- * accuracy caveats on `COUNTRIES`.
+ * Returns `undefined` for an entry with no location at all (`lat`/`lng` are `null` when
+ * the visitor shared no coordinates and the API could not approximate any from their IP
+ * address) and for coordinates that are not finite or out of range. Callers must treat
+ * the result as a display aid and keep the real coordinates visible — see the accuracy
+ * caveats on `COUNTRIES`.
  */
-export function resolveApproximateCountry(lat: number, lng: number): string | undefined {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+export function resolveApproximateCountry(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): string | undefined {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) {
     return undefined;
   }
 
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return undefined;
+  }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return undefined;
   }
@@ -66,11 +73,19 @@ function nearestByCentroid(
  * deliberate: it is roughly city-scale precision, which is all a guestbook pin conveys,
  * and it keeps the label short enough to sit beside a country name on a phone.
  *
- * Zero is rendered on the positive side of each axis (`0.0° N`, `0.0° E`) rather than
- * given a special case — the API's unresolved-location sentinel is exactly `(0, 0)`, and
- * showing it plainly is more honest than dressing it up.
+ * Returns an empty string when there is nothing to format: an entry whose location is
+ * unknown (`null` coordinates), or values that are not finite. Callers render their own
+ * "unknown location" wording in that case rather than a fabricated coordinate — `(0, 0)`
+ * is a real place in the Gulf of Guinea, and the API never invents it.
  */
-export function formatCoordinates(lat: number, lng: number): string {
+export function formatCoordinates(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): string {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) {
+    return '';
+  }
+
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return '';
   }

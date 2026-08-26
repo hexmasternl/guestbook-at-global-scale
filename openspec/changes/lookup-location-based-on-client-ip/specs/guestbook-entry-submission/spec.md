@@ -1,3 +1,8 @@
+> **Partly superseded by `optional-client-gps-location`.** The `(0, 0)` sentinel this
+> change chose for an unresolvable location has been replaced by nullable `lat`/`lng` —
+> both `null` means "unknown" — end to end (domain, Cosmos document, and both API
+> responses). Everything else here still holds.
+
 ## MODIFIED Requirements
 
 ### Requirement: Submit a guestbook greeting via POST /greet
