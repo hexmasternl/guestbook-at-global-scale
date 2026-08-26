@@ -83,4 +83,28 @@ public sealed class CreateGuestbookEntryCommandHandlerTests
         Assert.Equal(resolvedLat, result.Lat);
         Assert.Equal(resolvedLng, result.Lng);
     }
+
+    [Fact]
+    public async Task Handle_ShouldStoreUnknownLocation_WhenCoordinatesAreOmittedAndIpCannotBeResolved()
+    {
+        const string clientIp = "192.168.1.1";
+        _mockClientLocationResolver.Setup(x => x.Resolve(clientIp)).Returns((ValueTuple<double, double>?)null);
+
+        var (message, _, _) = GuestbookEntryFaker.CreateValidInput();
+        var command = new CreateGuestbookEntryCommand(message, null, null, clientIp);
+
+        GuestbookEntry? persisted = null;
+        _mockRepository
+            .Setup(x => x.AddAsync(It.IsAny<GuestbookEntry>(), It.IsAny<CancellationToken>()))
+            .Callback<GuestbookEntry, CancellationToken>((entry, _) => persisted = entry)
+            .Returns(Task.CompletedTask);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        _mockClientLocationResolver.Verify(x => x.Resolve(clientIp), Times.Once);
+        Assert.Null(result.Lat);
+        Assert.Null(result.Lng);
+        Assert.NotNull(persisted);
+        Assert.False(persisted!.HasLocation);
+    }
 }

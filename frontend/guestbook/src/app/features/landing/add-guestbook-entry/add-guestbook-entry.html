@@ -19,13 +19,13 @@
       @case ('resolving') {
         <p class="entry-form__location" role="status">
           <mat-progress-spinner diameter="16" mode="indeterminate" />
-          Detecting your location…
+          Detecting your location (optional)…
         </p>
       }
       @case ('unavailable') {
-        <p class="entry-form__error" role="alert">
+        <p class="entry-form__location" role="status">
           {{ locationUnavailableMessage }}
-          <button mat-button type="button" (click)="retryLocation()">Try again</button>
+          <button mat-button type="button" (click)="retryLocation()">Use my location</button>
         </p>
       }
       @case ('available') {
@@ -43,11 +43,7 @@
 
   <mat-dialog-actions align="end">
     <button mat-button type="button" (click)="close()">Cancel</button>
-    <button
-      mat-flat-button
-      type="submit"
-      [disabled]="status() === 'submitting' || locationStatus() !== 'available'"
-    >
+    <button mat-flat-button type="submit" [disabled]="status() === 'submitting'">
       @if (status() === 'submitting') {
         <mat-progress-spinner diameter="18" mode="indeterminate" />
       } @else {

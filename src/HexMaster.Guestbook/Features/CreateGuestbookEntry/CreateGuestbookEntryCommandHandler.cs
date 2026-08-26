@@ -18,14 +18,17 @@ public sealed class CreateGuestbookEntryCommandHandler(
 
         var region = regionProvider.GetCurrentRegion();
 
-        double lat, lng;
+        // Location is best-effort, in descending order of accuracy: coordinates the client
+        // shared (only available when the visitor granted GPS access), then an approximation
+        // from their IP address, then nothing at all — an entry with an unknown location.
+        double? lat = null, lng = null;
         if (command.Lat is { } suppliedLat && command.Lng is { } suppliedLng)
         {
             (lat, lng) = (suppliedLat, suppliedLng);
         }
-        else
+        else if (clientLocationResolver.Resolve(command.ClientIp) is { } resolved)
         {
-            (lat, lng) = clientLocationResolver.Resolve(command.ClientIp);
+            (lat, lng) = (resolved.Lat, resolved.Lng);
         }
 
         var entry = GuestbookEntry.Create(command.Message, lat, lng, region);
@@ -33,9 +36,10 @@ public sealed class CreateGuestbookEntryCommandHandler(
         await repository.AddAsync(entry, ct);
 
         logger.LogInformation(
-            "Guestbook entry {EntryId} created by backend region {HandledByRegion}",
+            "Guestbook entry {EntryId} created by backend region {HandledByRegion} with location {Location}",
             entry.Id,
-            entry.HandledByRegion);
+            entry.HandledByRegion,
+            entry.HasLocation ? $"{entry.Lat},{entry.Lng}" : "unknown");
 
         return new CreateGuestbookEntryResult(
             entry.Id,

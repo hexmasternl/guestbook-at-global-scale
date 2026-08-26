@@ -68,20 +68,9 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-
 app.UseHttpsRedirection();
-
 app.UseCors(CorsPolicyName);
-
 app.UseRateLimiter();
-
 app.MapGuestbookEndpoints();
 
 app.Run();

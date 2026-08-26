@@ -8,8 +8,23 @@ public sealed class GuestbookEntry
 
     public Guid Id { get; }
     public string Message { get; }
-    public double Lat { get; }
-    public double Lng { get; }
+
+    /// <summary>
+    /// Latitude of the entry's origin, or <c>null</c> when the location is unknown — the
+    /// visitor did not share GPS coordinates and the server could not approximate one from
+    /// their IP address either. Always <c>null</c> together with <see cref="Lng"/>.
+    /// </summary>
+    public double? Lat { get; }
+
+    /// <summary>Longitude of the entry's origin, or <c>null</c> when the location is unknown. See <see cref="Lat"/>.</summary>
+    public double? Lng { get; }
+
+    /// <summary>
+    /// <c>false</c> when this entry has no location at all ("unknown"). Deliberately preferred
+    /// over storing a fabricated <c>(0, 0)</c>, which is a real place in the Gulf of Guinea and
+    /// would be indistinguishable from a genuine coordinate.
+    /// </summary>
+    public bool HasLocation => Lat.HasValue && Lng.HasValue;
 
     /// <summary>Cosmos DB partition key. Seeded from the handling region so writes stay partition-aligned.</summary>
     public string Region { get; }
@@ -31,8 +46,8 @@ public sealed class GuestbookEntry
     private GuestbookEntry(
         Guid id,
         string message,
-        double lat,
-        double lng,
+        double? lat,
+        double? lng,
         string region,
         string handledByRegion,
         DateTimeOffset ts)
@@ -46,13 +61,20 @@ public sealed class GuestbookEntry
         Ts = ts;
     }
 
-    public static GuestbookEntry Create(string message, double lat, double lng, string handledByRegion)
+    /// <summary>
+    /// Creates a new entry. <paramref name="lat"/>/<paramref name="lng"/> are optional and must
+    /// be supplied together: both <c>null</c> means the origin is unknown, which is a valid entry.
+    /// </summary>
+    public static GuestbookEntry Create(string message, double? lat, double? lng, string handledByRegion)
     {
         if (string.IsNullOrWhiteSpace(message))
             throw new DomainException("Message must not be empty.");
 
         if (message.Length > MaxMessageLength)
             throw new DomainException($"Message must not exceed {MaxMessageLength} characters.");
+
+        if (lat.HasValue != lng.HasValue)
+            throw new DomainException("Lat and Lng must both be present, or both absent (unknown location).");
 
         if (lat is < -90 or > 90)
             throw new DomainException("Lat must be between -90 and 90.");
@@ -75,15 +97,19 @@ public sealed class GuestbookEntry
 
     /// <summary>
     /// Reconstructs a previously persisted entry from storage without re-applying
-    /// creation-time invariants (id and timestamp are already assigned).
+    /// creation-time invariants (id and timestamp are already assigned). A half-present
+    /// coordinate pair is normalized to "unknown" so the both-or-neither invariant still
+    /// holds for anything read back out of storage.
     /// </summary>
     public static GuestbookEntry Restore(
         Guid id,
         string message,
-        double lat,
-        double lng,
+        double? lat,
+        double? lng,
         string region,
         string handledByRegion,
         DateTimeOffset ts) =>
-        new(id, message, lat, lng, region, handledByRegion, ts);
+        lat.HasValue && lng.HasValue
+            ? new(id, message, lat, lng, region, handledByRegion, ts)
+            : new(id, message, null, null, region, handledByRegion, ts);
 }

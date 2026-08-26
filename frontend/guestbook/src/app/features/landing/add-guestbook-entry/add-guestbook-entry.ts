@@ -21,16 +21,20 @@ type LocationStatus = 'resolving' | 'available' | 'unavailable';
 
 const GENERIC_ERROR_MESSAGE = 'Something went wrong submitting your greeting. Please try again.';
 const LOCATION_UNAVAILABLE_MESSAGE =
-  "We couldn't detect your location. Please enable location access in your browser and try again.";
+  "We couldn't use your device location, so we'll estimate where you are from your network connection instead.";
 
 /**
  * Modal form for composing and submitting a guestbook greeting, opened from
- * the landing page's "Sign the guestbook" CTA via `MatDialog`. Latitude and
- * longitude are never entered by hand — they are resolved from the visitor's
- * geolocation and, if unavailable, submission is blocked with guidance to
- * enable location access rather than sending a request without coordinates.
- * Purely a UI concern — the actual `POST /greet` call is delegated to
- * `GuestbookApi`.
+ * the landing page's "Sign the guestbook" CTA via `MatDialog`.
+ *
+ * Coordinates are never entered by hand, and sharing them is **optional**: the dialog
+ * asks the browser for the visitor's location once on open, and if that is denied,
+ * unavailable, or still pending when the form is submitted, the greeting is sent without
+ * coordinates. The API then approximates the location from the client's IP address, and
+ * records it as unknown if even that fails — so a visitor who never grants location
+ * access can still sign the guestbook.
+ *
+ * Purely a UI concern — the actual `POST /greet` call is delegated to `GuestbookApi`.
  */
 @Component({
   selector: 'gkb-add-guestbook-entry',
@@ -78,7 +82,7 @@ export class AddGuestbookEntry {
   }
 
   protected submitForm(): void {
-    if (this.status() === 'submitting' || this.locationStatus() !== 'available' || !this.position) {
+    if (this.status() === 'submitting') {
       return;
     }
 
@@ -88,11 +92,16 @@ export class AddGuestbookEntry {
     }
 
     const { message } = this.model();
-    const { lat, lng } = this.position;
     this.status.set('submitting');
     this.errorMessage.set(undefined);
 
-    this.guestbookApi.createEntry({ message, lat, lng }).subscribe({
+    // Coordinates are sent only when the visitor actually shared them; omitting them
+    // hands the location question to the server (IP lookup, then "unknown").
+    const request = this.position
+      ? { message, lat: this.position.lat, lng: this.position.lng }
+      : { message };
+
+    this.guestbookApi.createEntry(request).subscribe({
       next: (dto) => {
         this.status.set('success');
         this.dialogRef.close(dto);

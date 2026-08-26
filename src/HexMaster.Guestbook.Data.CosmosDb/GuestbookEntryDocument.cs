@@ -19,11 +19,18 @@ public sealed class GuestbookEntryDocument
     [JsonProperty("message")]
     public required string Message { get; init; }
 
+    /// <summary>
+    /// Latitude of the entry's origin, or <c>null</c> when the location is unknown (the visitor
+    /// shared no GPS coordinates and their IP address could not be approximated). Nullable
+    /// rather than <c>required</c> for exactly that case; always null together with
+    /// <see cref="Lng"/>.
+    /// </summary>
     [JsonProperty("lat")]
-    public required double Lat { get; init; }
+    public double? Lat { get; init; }
 
+    /// <summary>Longitude of the entry's origin, or <c>null</c> when the location is unknown. See <see cref="Lat"/>.</summary>
     [JsonProperty("lng")]
-    public required double Lng { get; init; }
+    public double? Lng { get; init; }
 
     [JsonProperty("region")]
     public required string Region { get; init; }

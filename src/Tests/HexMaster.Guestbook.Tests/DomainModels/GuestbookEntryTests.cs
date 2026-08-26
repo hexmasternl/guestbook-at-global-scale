@@ -68,4 +68,35 @@ public sealed class GuestbookEntryTests
     {
         Assert.Throws<DomainException>(() => GuestbookEntry.Create("hi", 0, lng, "westeurope"));
     }
+
+    [Fact]
+    public void Create_ShouldStoreUnknownLocation_WhenNoCoordinatesAreSupplied()
+    {
+        var entry = GuestbookEntry.Create("hi from nowhere", null, null, "westeurope");
+
+        Assert.Null(entry.Lat);
+        Assert.Null(entry.Lng);
+        Assert.False(entry.HasLocation);
+    }
+
+    [Theory]
+    [InlineData(52.37, null)]
+    [InlineData(null, 4.9)]
+    public void Create_ShouldThrowDomainException_WhenOnlyOneCoordinateIsSupplied(double? lat, double? lng)
+    {
+        Assert.Throws<DomainException>(() => GuestbookEntry.Create("hi", lat, lng, "westeurope"));
+    }
+
+    [Theory]
+    [InlineData(52.37, null)]
+    [InlineData(null, 4.9)]
+    public void Restore_ShouldNormalizeHalfPresentCoordinatesToUnknown(double? lat, double? lng)
+    {
+        var entry = GuestbookEntry.Restore(
+            Guid.NewGuid(), "hi", lat, lng, "westeurope", "westeurope", DateTimeOffset.UtcNow);
+
+        Assert.Null(entry.Lat);
+        Assert.Null(entry.Lng);
+        Assert.False(entry.HasLocation);
+    }
 }

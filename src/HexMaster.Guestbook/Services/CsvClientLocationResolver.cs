@@ -14,13 +14,11 @@ namespace HexMaster.Guestbook.Services;
 /// (type <c>4</c>/<c>6</c>, the numeric IP bounds, and the ISO alpha-2 code). The dataset
 /// is parsed once at construction into sorted, in-memory range tables (one for IPv4, one
 /// for IPv6) and looked up by binary search. Never throws: any failure (unparsable/unmapped
-/// IP, unknown country code, malformed data row) results in the fixed <c>(0, 0)</c>
-/// sentinel per the fail-safe contract.
+/// IP, unknown country code, malformed data row) results in <c>null</c> — "location
+/// unknown" — per the fail-safe contract.
 /// </summary>
 public sealed class CsvClientLocationResolver : IClientLocationResolver
 {
-    private static readonly (double Lat, double Lng) UnknownLocation = (0, 0);
-
     private readonly record struct V4Range(uint Start, uint End, string CountryCode);
     private readonly record struct V6Range(UInt128 Start, UInt128 End, string CountryCode);
 
@@ -97,11 +95,11 @@ public sealed class CsvClientLocationResolver : IClientLocationResolver
         _logger.LogInformation("Loaded GeoIp location data: {V4} IPv4 ranges, {V6} IPv6 ranges.", _v4.Length, _v6.Length);
     }
 
-    public (double Lat, double Lng) Resolve(string? clientIp)
+    public (double Lat, double Lng)? Resolve(string? clientIp)
     {
         if (string.IsNullOrWhiteSpace(clientIp) || !IPAddress.TryParse(clientIp, out var address))
         {
-            return UnknownLocation;
+            return null;
         }
 
         string? countryCode;
@@ -118,20 +116,20 @@ public sealed class CsvClientLocationResolver : IClientLocationResolver
         }
         else
         {
-            return UnknownLocation;
+            return null;
         }
 
         if (countryCode is null)
         {
             _logger.LogDebug("No country could be resolved for client IP {ClientIp}", clientIp);
-            return UnknownLocation;
+            return null;
         }
 
         var centroid = CountryCentroids.TryGetCentroid(countryCode);
         if (centroid is null)
         {
             _logger.LogDebug("Resolved country {CountryCode} for client IP {ClientIp} has no known centroid", countryCode, clientIp);
-            return UnknownLocation;
+            return null;
         }
 
         return centroid.Value;

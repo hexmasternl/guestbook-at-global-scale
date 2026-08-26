@@ -29,7 +29,8 @@ public sealed class CsvClientLocationResolverTests
         var actual = resolver.Resolve(clientIp);
 
         Assert.NotNull(expected);
-        Assert.Equal(expected!.Value, actual);
+        Assert.NotNull(actual);
+        Assert.Equal(expected!.Value, actual!.Value);
     }
 
     [Fact]
@@ -40,7 +41,8 @@ public sealed class CsvClientLocationResolverTests
 
         var actual = resolver.Resolve("::ffff:81.2.69.142");
 
-        Assert.Equal(expected, actual);
+        Assert.NotNull(actual);
+        Assert.Equal(expected, actual!.Value);
     }
 
     [Theory]
@@ -49,25 +51,22 @@ public sealed class CsvClientLocationResolverTests
     [InlineData("not-an-ip")]
     [InlineData(null)]
     [InlineData("")]
-    public void Resolve_ShouldReturnFallback_WhenIpCannotBeResolved(string? clientIp)
+    public void Resolve_ShouldReturnNull_WhenIpCannotBeResolved(string? clientIp)
     {
         var resolver = CreateResolver();
 
-        var (lat, lng) = resolver.Resolve(clientIp);
+        var location = resolver.Resolve(clientIp);
 
-        Assert.Equal(0, lat);
-        Assert.Equal(0, lng);
+        // Null means "unknown", which the caller stores as such — never a fabricated (0, 0).
+        Assert.Null(location);
     }
 
     [Fact]
-    public void Resolve_ShouldReturnFallback_WhenDatasetIsEmpty()
+    public void Resolve_ShouldReturnNull_WhenDatasetIsEmpty()
     {
         var resolver = new CsvClientLocationResolver(
             new StringReader(string.Empty), NullLogger<CsvClientLocationResolver>.Instance);
 
-        var (lat, lng) = resolver.Resolve("1.0.5.5");
-
-        Assert.Equal(0, lat);
-        Assert.Equal(0, lng);
+        Assert.Null(resolver.Resolve("1.0.5.5"));
     }
 }
