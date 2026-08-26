@@ -17,6 +17,7 @@
 
   &__location {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: $spacing-sm;
     margin: 0;
