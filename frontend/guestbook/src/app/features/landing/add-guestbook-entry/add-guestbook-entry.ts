@@ -81,7 +81,11 @@ export class AddGuestbookEntry {
     this.resolveLocation();
   }
 
-  protected submitForm(): void {
+  protected submitForm(event?: Event): void {
+    // The dialog form has no `NgForm` directive (signal forms only bring `FormField`),
+    // so the native submit must be cancelled here or the browser reloads the page.
+    event?.preventDefault();
+
     if (this.status() === 'submitting') {
       return;
     }

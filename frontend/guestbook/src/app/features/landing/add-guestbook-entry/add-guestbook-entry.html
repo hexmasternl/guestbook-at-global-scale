@@ -1,6 +1,6 @@
 <h2 mat-dialog-title id="add-guestbook-entry-title">Sign the guestbook</h2>
 
-<form (ngSubmit)="submitForm()" class="entry-form" aria-labelledby="add-guestbook-entry-title">
+<form (submit)="submitForm($event)" class="entry-form" aria-labelledby="add-guestbook-entry-title">
   <mat-dialog-content class="entry-form__content">
     <mat-form-field appearance="outline" class="entry-form__field">
       <mat-label>Message</mat-label>

@@ -73,6 +73,30 @@ describe('AddGuestbookEntry', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  // The dialog form has no `NgForm` directive, so submission is wired to the native
+  // `submit` event and must cancel it — otherwise the browser reloads the whole page
+  // instead of the greeting going out over XHR.
+  it('handles the native form submit and prevents the browser page reload', async () => {
+    stubGeolocation({ lat: 52.3676, lng: 4.9041 });
+    const fixture = TestBed.createComponent(AddGuestbookEntry);
+    fixture.detectChanges();
+    await settleLocation(fixture);
+
+    guestbookApiMock.createEntry.mockReturnValue(of({ id: 'a1' } as GuestbookEntryDto));
+    fixture.componentInstance['model'].set({ message: 'hi from Amsterdam' });
+
+    const formElement = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const submitEvent = new Event('submit', { cancelable: true });
+    formElement.dispatchEvent(submitEvent);
+
+    expect(submitEvent.defaultPrevented).toBe(true);
+    expect(guestbookApiMock.createEntry).toHaveBeenCalledWith({
+      message: 'hi from Amsterdam',
+      lat: 52.3676,
+      lng: 4.9041,
+    });
+  });
+
   it('blocks submission and shows validation errors when the message is empty', async () => {
     stubGeolocation({ lat: 52.3676, lng: 4.9041 });
     const fixture = TestBed.createComponent(AddGuestbookEntry);
