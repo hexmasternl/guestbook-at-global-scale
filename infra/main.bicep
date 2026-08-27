@@ -16,6 +16,7 @@ param regions array = [
   //{ name: 'australiacentral', short: 'auc' } // Australia Central
   { name: 'westus', short: 'wus' } // West US
   { name: 'swedencentral', short: 'swc' } // West Europe
+  { name: 'malaysiawest', short: 'mwe' } // West Europe
   //{ name: 'westeurope', short: 'weu' } // West Europe
   // { name: 'eastus',           short: 'eus' } // East US
   // { name: 'southafricanorth', short: 'san' } // South Africa North
@@ -56,6 +57,7 @@ param centralLocation string = 'westeurope'
   'eastus2'
   'westeurope'
   'eastasia'
+  'malaysiawest'
 ])
 param staticWebAppLocation string = 'westeurope'
 
